@@ -1,0 +1,15 @@
+# Files NOT shipped into Docker images
+.git/
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+data/
+mlruns/
+mlflow_artifacts/
+
+notebooks/
+docs/
+*.pdf
+.env

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ipynb_checkpoints/
+
+# Data / artifacts
+data/raw/
+data/interim/
+data/processed/
+mlruns/
+mlflow_artifacts/
+
+# Local config
+.env
+.env.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Course material (not for redistribution)
+Obligatorio_Machine_Learning_en_Produccion.pdf

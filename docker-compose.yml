@@ -1,0 +1,184 @@
+# ============================================================================
+# Hipica-ML — local stack
+# ----------------------------------------------------------------------------
+# Services:
+#   postgres   : backing store for MLflow tracking + future application data
+#   mlflow     : MLflow Tracking Server (UI on :5000)
+#   api        : FastAPI inference server (:8000) — /predict_online, /predict_batch
+#   streamlit  : Streamlit UI (:8501) consuming the FastAPI service
+#   training   : on-demand GPU container for XGBoost training (profile: training)
+#
+# Quickstart:
+#   cp .env.example .env        # (created in Step 2)
+#   docker compose up -d postgres mlflow api streamlit
+#   docker compose --profile training run --rm training
+#
+# NOTE: the Dockerfiles referenced under ./docker/ are produced in Step 3.
+#       Until then, only `postgres` and `mlflow` will start cleanly.
+# ============================================================================
+
+name: hipica-ml
+
+services:
+  # --------------------------------------------------------------------------
+  # PostgreSQL — MLflow backend + application data
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: hipica_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mlflow}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Step 2/3: init.sql will create an additional `racing` database
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mlflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [hipica_net]
+
+  # --------------------------------------------------------------------------
+  # MLflow Tracking Server
+  # --------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    container_name: hipica_mlflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@postgres:5432/${POSTGRES_DB:-mlflow}
+      ARTIFACT_ROOT: /mlruns
+    # The official image lacks the psycopg2 driver; install it on first start.
+    command: >
+      bash -c "pip install --no-cache-dir psycopg2-binary &&
+      mlflow server
+      --backend-store-uri $$BACKEND_STORE_URI
+      --default-artifact-root $$ARTIFACT_ROOT
+      --host 0.0.0.0
+      --port 5000"
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - mlflow_artifacts:/mlruns
+    networks: [hipica_net]
+
+  # --------------------------------------------------------------------------
+  # FastAPI inference service
+  # --------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: hipica-ml/api:latest
+    container_name: hipica_api
+    restart: unless-stopped
+    depends_on:
+      mlflow:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_NAME: ${MODEL_NAME:-trifecta-classifier}
+      MODEL_STAGE: ${MODEL_STAGE:-Production}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@postgres:5432/${POSTGRES_DB:-mlflow}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src
+      - ./api:/app/api
+      - ./models:/app/models:ro          # local-fallback model artifacts
+      - ./data:/app/data:ro              # history.parquet for FE pipeline warmup
+      - mlflow_artifacts:/mlruns:ro      # read-only: API only loads models
+    command: >
+      uvicorn api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers ${API_WORKERS:-2}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=2).status == 200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [hipica_net]
+
+  # --------------------------------------------------------------------------
+  # Streamlit UI
+  # --------------------------------------------------------------------------
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/streamlit.Dockerfile
+    image: hipica-ml/streamlit:latest
+    container_name: hipica_streamlit
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8000
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    volumes:
+      - ./app:/app/app
+    command: >
+      streamlit run app/streamlit_app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true
+    networks: [hipica_net]
+
+  # --------------------------------------------------------------------------
+  # Training (on-demand, GPU). Not started by default.
+  #   docker compose --profile training run --rm training
+  # Requires NVIDIA Container Toolkit on the host.
+  # --------------------------------------------------------------------------
+  training:
+    profiles: ["training"]
+    build:
+      context: .
+      dockerfile: docker/training.Dockerfile
+    image: hipica-ml/training:latest
+    container_name: hipica_training
+    depends_on:
+      mlflow:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@postgres:5432/${POSTGRES_DB:-mlflow}
+      MODEL_NAME: ${MODEL_NAME:-trifecta-classifier}
+      NVIDIA_VISIBLE_DEVICES: all
+    volumes:
+      - ./src:/app/src
+      - ./notebooks:/app/notebooks
+      - ./data:/app/data
+      - mlflow_artifacts:/mlruns
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [hipica_net]
+
+# ============================================================================
+
+volumes:
+  postgres_data:
+  mlflow_artifacts:
+
+networks:
+  hipica_net:
+    driver: bridge
