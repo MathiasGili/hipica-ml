@@ -1,5 +1,5 @@
 # hipica-ml — Maroñas Trifecta Classifier
-
+[![CI](https://github.com/MathiasGili/hipica-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGili/hipica-ml/actions/workflows/ci.yml)
 End-to-end ML system for predicting whether a horse will finish in the
 **Trifecta** (1st, 2nd or 3rd) at Hipódromo Nacional de Maroñas
 (Montevideo, Uruguay). Trained on ~13 years of public race history
@@ -117,6 +117,34 @@ python -m pytest tests/test_features.py -v
 # 7 passed in <1s, including 2 explicit anti-skew regression tests.
 ```
 
+## Data versioning (DVC)
+
+The processed long-form dataset (`data/processed/history.parquet`,
+~1.3 MB, content hash committed in
+[`history.parquet.dvc`](data/processed/history.parquet.dvc)) is tracked
+with [DVC](https://dvc.org/) so the model artifacts in `models/` and
+the MLflow runs are reproducible against the exact same input.
+
+```bash
+# 1. Configure a local DVC store on the new machine (any path works)
+dvc remote add -d localstore ~/.dvc-store
+
+# 2. If the remote already has the blob, pull it
+dvc pull data/processed/history.parquet.dvc
+
+# 3. Otherwise, regenerate from the raw .xls files and re-add
+python -c "from src.config import RAW_DIR, PROCESSED_DIR; \
+  from src.ingestion.loader import build_long_form_dataset; \
+  build_long_form_dataset(RAW_DIR, cache_path=PROCESSED_DIR / 'history.parquet', use_cache=False)"
+dvc add data/processed/history.parquet
+dvc push
+```
+
+Git tracks **only** the small `.dvc` pointer (md5 + size) and the DVC
+config under `.dvc/`. The actual parquet stays out of the repository.
+The raw `.xls` files under `data/raw/` are deliberately *not* tracked
+by DVC — they are reproducible by re-running the scraper.
+
 ## Project layout
 
 ```
@@ -145,10 +173,11 @@ loader column offset, and bug we caught — see
 
 ## License
 
-Code is unlicensed (all rights reserved by the author) at this stage —
-this is academic coursework. The race history data scraped from the
-public Maroñas API belongs to its respective owners and is not
-redistributed in this repository (`data/raw/` is gitignored).
+Code is released under the [MIT License](LICENSE) © 2026 Mathias Gili
+and Bruno Bellizzi. The race history data scraped from the public
+Marañas API belongs to its respective owners and is **not** redistributed
+in this repository (`data/raw/` is gitignored; only a DVC pointer to the
+processed parquet is committed).
 
 ## Acknowledgements
 

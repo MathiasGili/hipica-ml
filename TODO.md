@@ -15,9 +15,9 @@
 - ✅ EDA notebook (`notebooks/01_eda.ipynb`) — 8 figures saved.
 - ✅ SHAP notebook (`notebooks/02_explainability.ipynb`) — 4 figures saved.
 - ✅ Feature selection (`notebooks/03_feature_selection.ipynb`) — dropped 3 raw features, ROC-AUC +0.0018.
-- ❌ Report (`informe`) — **mandatory**, not started.
-- ❌ Hyperparameter tuning — elective, not started.
-- ❌ Hyperparameter tuning, feature selection — electives, not started.
+- ✅ DVC — `data/processed/history.parquet` tracked, local remote at `~/.dvc-store`, `dvc pull` round-trip verified.
+- ✅ Report — `reports/informe.md` (19 sections) rendered to `reports/informe.pdf` (21 pages, 1.1 MB) via WeasyPrint.
+- 🟡 Hyperparameter tuning — script ready (`src/training/tune.py`), 3-trial smoke test green; full 50-trial run pending.
 
 ---
 
@@ -116,18 +116,25 @@ prediction. Optional.
 `post_position` is 100 % NaN at training (see `CLAUDE.md` §8.6); model never
 learns from it. Hard candidate to drop in feature selection.
 
-### 2.2 Hyperparameter tuning with Optuna
+### 2.2 Hyperparameter tuning with Optuna — 🟡 in progress
 **Why**: PDF lists "ajuste de hiperparámetros" as an explicit option, and the
 rubric asks to "evalúen su impacto en el rendimiento del modelo y sistema".
 
-Add `src/training/tune.py`:
-- [ ] `pip install optuna` (add to `requirements.txt`).
-- [ ] Define search space: `n_estimators ∈ [200, 1200]`, `max_depth ∈ [3, 10]`,
-  `lr ∈ [0.01, 0.2]`, `min_child_weight ∈ [1, 10]`, `reg_lambda ∈ [0, 5]`,
-  `subsample ∈ [0.6, 1.0]`, `colsample_bytree ∈ [0.6, 1.0]`.
-- [ ] Optimise on validation fold from temporal split (NOT test).
-- [ ] Maximise PR-AUC (better than ROC-AUC for our 36 % imbalance).
-- [ ] 50-100 trials, log every trial to MLflow as a child run.
+Script: `src/training/tune.py` (`python -m src.training.tune --cache --n-trials 50`).
+- [x] `optuna>=3.6.0` in `requirements.txt` (installed: 4.9.0).
+- [x] Search space: `n_estimators ∈ [200, 1200] step 50`, `max_depth ∈ [3, 10]`,
+  `lr ∈ [0.01, 0.2]` (log), `min_child_weight ∈ [1, 10]`, `reg_lambda ∈ [0, 5]`,
+  `reg_alpha ∈ [0, 2]`, `subsample ∈ [0.6, 1.0]`, `colsample_bytree ∈ [0.6, 1.0]`,
+  `gamma ∈ [0, 5]`.
+- [x] Inner temporal split inside the train slice; test held out, never seen
+  during search. Optimises **PR-AUC** on the val fold.
+- [x] TPESampler(seed=42); every trial logs as an MLflow child run; best
+  params + final test metrics logged on the parent run.
+- [x] Refit on full train with best params, persist to
+  `models/trifecta_pipeline_tuned/`.
+- [x] Smoke test: 3 trials on CPU green — best val PR-AUC 0.6306, refit test
+  ROC-AUC 0.7046 / PR-AUC 0.6350 (parity with v4 already).
+- [ ] **Full run (50 trials)** — pending. CPU ≈ 5h, GPU ≈ 1h.
 - [ ] Compare final tuned model to v4 in the report.
 - [ ] Measure latency impact: `n_estimators` doubling roughly doubles inference time.
 
@@ -161,18 +168,23 @@ contract.
 and the original `NUMERIC_FEATURES` list stays untouched. If Optuna also
 shows the reduced model is more robust, then we flip.
 
-### 2.4 Data versioning (closes the ML traceability tier)
+### 2.4 Data versioning — ✅ done
 **Why**: PDF lists three things to version under "Trazabilidad de ML":
-experiments ✅, models ✅, **data ❌**.
+experiments ✅, models ✅, **data ✅** (now closed).
 
-Add DVC:
-- [ ] `pip install dvc` (add to `requirements.txt`).
-- [ ] `dvc init`.
-- [ ] `dvc add data/processed/history.parquet`.
-- [ ] Commit `.dvc` files to git.
-- [ ] Document in README how to pull data with `dvc pull` (or just regenerate
-  with the loader if no remote is configured).
-- [ ] Optional: configure a local DVC remote at `~/.dvc-store` for the demo.
+- [x] `dvc>=3.50.0` in `requirements.txt` (installed 3.67.1).
+- [x] `dvc init` (commits `.dvc/` and `.dvcignore`).
+- [x] `dvc add data/processed/history.parquet` → md5 `a5edaea5…`,
+  pointer file `data/processed/history.parquet.dvc` (98 bytes).
+- [x] `.gitignore` adjusted: `data/processed/*` ignored, but
+  `!data/processed/*.dvc` whitelisted so the pointer is committable.
+- [x] Local default remote: `dvc remote add -d localstore ~/.dvc-store`.
+  `dvc push` succeeded (1 file pushed).
+- [x] Round-trip verified: deleted `history.parquet` and `dvc pull`
+  restored the exact bytes from the local store.
+- [x] README § "Data versioning (DVC)" documents the workflow,
+  including the regenerate-from-raw fallback if no remote is
+  configured.
 
 ---
 
@@ -180,10 +192,10 @@ Add DVC:
 
 These are **not** required by the rubric but raise the polish level:
 
-- [ ] **LICENSE file** — currently the README says "unlicensed". Add MIT or
-  Apache-2.0 (recommended: MIT).
-- [ ] **GitHub Actions CI** — run `pytest` on push. Free, signals
-  professionalism in the report.
+- [x] **LICENSE file** — MIT License added at repo root.
+- [x] **GitHub Actions CI** — `.github/workflows/ci.yml` runs `pytest`
+  on push/PR to `main` (Ubuntu, Python 3.10, pip cache, Playwright
+  browser download skipped).
 - [ ] **`/predict_explain` endpoint** — wraps SHAP for a single horse. Demo
   material for the Streamlit page.
 - [ ] **Calibration plot** — current model is mildly overconfident

@@ -20,7 +20,9 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
+import numpy as np
 import pandas as pd
+import xgboost as xgb
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
@@ -28,9 +30,12 @@ from src.config import ALL_FEATURES
 
 from .model_loader import LoadedModel, load_model
 from .schemas import (
+    FeatureContribution,
     HorsePrediction,
     PredictBatchRequest,
     PredictBatchResponse,
+    PredictExplainRequest,
+    PredictExplainResponse,
     PredictOnlineRequest,
     PredictOnlineResponse,
 )
@@ -142,6 +147,54 @@ def predict_batch(req: PredictBatchRequest) -> PredictBatchResponse:
         racetrack_id=req.race.racetrack_id,
         distance_m=req.race.distance_m,
         predictions=final,
+        model_name=m.source,
+        model_version=m.version,
+        served_at=datetime.now(timezone.utc),
+    )
+
+
+# ---------------------------------------------------------------------------
+@app.post("/predict_explain", response_model=PredictExplainResponse)
+def predict_explain(req: PredictExplainRequest) -> PredictExplainResponse:
+    """Return the prediction plus the top-k SHAP-style contributions.
+
+    Uses the booster's ``pred_contribs=True`` path, which is
+    mathematically identical to TreeSHAP and avoids the
+    ``TreeExplainer(clf)`` failure mode that SHAP 0.49 exhibits with
+    XGBoost 2.x classifiers loaded from joblib.
+    """
+    m = _model()
+    targets = _entries_to_targets(req.race, [req.entry])
+    feats = m.feature_pipeline.transform(targets)[ALL_FEATURES]
+
+    pre = m.estimator.named_steps["pre"]
+    clf = m.estimator.named_steps["clf"]
+    X_pre = pre.transform(feats)
+    feat_names = list(pre.get_feature_names_out())
+
+    booster = clf.get_booster()
+    dmat = xgb.DMatrix(X_pre, feature_names=feat_names)
+    contribs = booster.predict(dmat, pred_contribs=True)[0]
+    base_value = float(contribs[-1])
+    feat_contribs = contribs[:-1]
+
+    proba = float(clf.predict_proba(feats)[0, 1])
+
+    order = np.argsort(np.abs(feat_contribs))[::-1][: req.top_k]
+    row_values = np.asarray(X_pre[0]).ravel() if X_pre.ndim == 2 else np.asarray(X_pre).ravel()
+    top = [
+        FeatureContribution(
+            feature=feat_names[i],
+            value=(None if not np.isfinite(row_values[i]) else float(row_values[i])),
+            contribution=float(feat_contribs[i]),
+        )
+        for i in order
+    ]
+    return PredictExplainResponse(
+        horse_name=req.entry.horse_name,
+        p_trifecta=proba,
+        base_value=base_value,
+        top_contributions=top,
         model_name=m.source,
         model_version=m.version,
         served_at=datetime.now(timezone.utc),

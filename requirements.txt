@@ -26,6 +26,8 @@ shap>=0.46.0                 # explainability (electivo)
 
 # ---------- Experiment tracking ----------
 mlflow>=2.16.0,<3.0
+optuna>=3.6.0                # hyperparameter tuning (electivo)
+dvc>=3.50.0                  # data versioning (electivo)
 
 # ---------- Scraping ----------
 requests>=2.32.0

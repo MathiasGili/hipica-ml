@@ -8,7 +8,13 @@ __pycache__/
 # Data / artifacts
 data/raw/
 data/interim/
-data/processed/
+# data/processed/: tracked by DVC. Ignore the binary blobs but keep the
+# .dvc pointer files and DVC-managed .gitignore so the layout is
+# reproducible from a fresh clone with `dvc pull` (or by rebuilding from
+# raw with the loader).
+data/processed/*
+!data/processed/.gitignore
+!data/processed/*.dvc
 mlruns/
 mlflow_artifacts/
 
@@ -23,3 +29,6 @@ mlflow_artifacts/
 
 # Course material (not for redistribution)
 Obligatorio_Machine_Learning_en_Produccion.pdf
+
+# Intermediate HTML used to render the informe (regenerated from informe.md)
+reports/informe.html

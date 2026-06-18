@@ -76,3 +76,32 @@ class PredictBatchResponse(BaseModel):
     model_name: str
     model_version: str | None
     served_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Explainability
+# ---------------------------------------------------------------------------
+class PredictExplainRequest(BaseModel):
+    """Same shape as :class:`PredictOnlineRequest` plus a top_k knob."""
+
+    race: RaceContextIn
+    entry: HorseEntryIn
+    top_k: int = Field(default=10, ge=1, le=40,
+                       description="Number of top contributions to return")
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float | None = Field(default=None,
+                                description="Feature value after preprocessing (NaN -> None)")
+    contribution: float = Field(..., description="SHAP value in log-odds space")
+
+
+class PredictExplainResponse(BaseModel):
+    horse_name: str
+    p_trifecta: float
+    base_value: float = Field(..., description="Model bias in log-odds space")
+    top_contributions: list[FeatureContribution]
+    model_name: str
+    model_version: str | None
+    served_at: datetime

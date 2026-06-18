@@ -1,0 +1,5 @@
+[core]
+    analytics = false
+    remote = localstore
+['remote "localstore"']
+    url = /home/mgili/.dvc-store
