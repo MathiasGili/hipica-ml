@@ -314,7 +314,7 @@ importa.
 
 ## 8. API y serving
 
-**Servicio.** FastAPI 0.111 + Uvicorn (`api/main.py`). Tres
+**Servicio.** FastAPI 0.111 + Uvicorn (`api/main.py`). Cuatro
 endpoints:
 
 | Método | Ruta | Uso |
@@ -322,6 +322,14 @@ endpoints:
 | GET | `/health` | Liveness + versión del modelo cargado |
 | POST | `/predict_online` | Un solo caballo (z-score en carrera = NaN) |
 | POST | `/predict_batch` | Field completo (1..25), z-score correcto |
+| POST | `/predict_explain` | Un caballo + top-k contribuciones SHAP |
+
+El endpoint `/predict_explain` (añadido como hardening) reusa el mismo
+modelo cargado y devuelve la probabilidad junto con el `base_value`
+(bias del modelo en log-odds) y las top-k contribuciones por feature
+(en log-odds), calculadas vía `booster.predict(..., pred_contribs=True)`
+— el mismo workaround que el notebook de SHAP (§11) para evitar el
+bug `TreeExplainer(clf)` con XGBoost 2.x + SHAP 0.49.
 
 **Validación.** Pydantic v2 (`api/schemas.py`):
 `kg ∈ (30, 80)`, `post_position ∈ [1, 25]`, `horse_age ∈ [2, 20]`,
@@ -596,8 +604,6 @@ esto con +0.022 ROC-AUC al sumar dividend + jockey-cross-horse.
 
 ## 17. Trade-offs y mejoras posibles
 
-- **`/predict_explain` endpoint.** Wrapper alrededor de SHAP para una
-  predicción única, demo material para Streamlit.
 - **post_position válida en histórico.** Requeriría parsear la tabla
   per-row dentro de cada bloque de la Tabulada (no presente en el
   layout actual). Costo alto, ganancia marginal.

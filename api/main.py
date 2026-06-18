@@ -170,18 +170,24 @@ def predict_explain(req: PredictExplainRequest) -> PredictExplainResponse:
     pre = m.estimator.named_steps["pre"]
     clf = m.estimator.named_steps["clf"]
     X_pre = pre.transform(feats)
-    feat_names = list(pre.get_feature_names_out())
-
+    # The ColumnTransformer may return a pandas DataFrame (with `object` dtype
+    # on the OHE-expanded categorical columns) depending on the global
+    # ``set_config`` state. Coerce to a dense float matrix that DMatrix
+    # accepts, and trust the booster as the source of truth for feature
+    # names — that's the same view it was trained against.
     booster = clf.get_booster()
-    dmat = xgb.DMatrix(X_pre, feature_names=feat_names)
+    X_pre_arr = np.asarray(getattr(X_pre, "to_numpy", lambda: X_pre)(), dtype=float)
+    feat_names = booster.feature_names or list(pre.get_feature_names_out())
+
+    dmat = xgb.DMatrix(X_pre_arr, feature_names=feat_names)
     contribs = booster.predict(dmat, pred_contribs=True)[0]
     base_value = float(contribs[-1])
     feat_contribs = contribs[:-1]
 
-    proba = float(clf.predict_proba(feats)[0, 1])
+    proba = float(m.estimator.predict_proba(feats)[0, 1])
 
     order = np.argsort(np.abs(feat_contribs))[::-1][: req.top_k]
-    row_values = np.asarray(X_pre[0]).ravel() if X_pre.ndim == 2 else np.asarray(X_pre).ravel()
+    row_values = X_pre_arr[0]
     top = [
         FeatureContribution(
             feature=feat_names[i],

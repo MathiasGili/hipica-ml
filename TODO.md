@@ -196,10 +196,13 @@ These are **not** required by the rubric but raise the polish level:
 - [x] **GitHub Actions CI** — `.github/workflows/ci.yml` runs `pytest`
   on push/PR to `main` (Ubuntu, Python 3.10, pip cache, Playwright
   browser download skipped).
-- [ ] **`/predict_explain` endpoint** — wraps SHAP for a single horse. Demo
-  material for the Streamlit page.
-- [ ] **Calibration plot** — current model is mildly overconfident
-  (Brier 0.203); show a reliability diagram in the report.
+- [x] **`/predict_explain` endpoint** — returns prediction +
+  base value + top-k SHAP contributions via
+  `booster.predict(..., pred_contribs=True)` (same workaround as
+  the SHAP notebook). Smoke-tested via `TestClient`.
+- [x] **Calibration plot** — saved to
+  `reports/figures/14_calibration.png` and added as §7.1 in the
+  informe. Reliability gap < 0.02 in the operating range.
 - [ ] **Build the Streamlit Docker image and bring the full stack up live** —
   capture a screenshot for the report.
 - [ ] **MLflow Model Registry exercised against Postgres backend** — currently
