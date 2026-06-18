@@ -379,9 +379,14 @@ El ítem "Trazabilidad" del rubric pide versionar tres cosas:
    contiene `best_val_pr_auc`, `best__*` (params ganadores) y
    `test_*` del refit final.
 2. **Modelos** ✅ — MLflow Registry vía
-   `mlflow.sklearn.log_model(..., registered_model_name=...)`.
-   Persistencia adicional como joblib en `models/trifecta_pipeline/`
-   para el fallback offline de la API.
+   `mlflow.sklearn.log_model(..., registered_model_name=...)`. La
+   versión v4 actual fue **registrada y promovida a `Production`
+   contra el backend Postgres** (run `register_v4_local_to_postgres`,
+   versión 1 del modelo `trifecta-classifier`). La API verifica esto
+   en su `/health`: con la pila docker-compose levantada,
+   `model_name=mlflow, model_version=1`. Persistencia adicional como
+   joblib en `models/trifecta_pipeline/` para el fallback offline si
+   MLflow no está disponible.
 3. **Datos** ✅ — DVC. `data/processed/history.parquet`
    (md5 `a5edaea50b1cfd8336c6dd5d2a3f5f87`, 1.34 MB) tracked con
    pointer commitado en
@@ -524,10 +529,21 @@ sólo 3 trials, lo que sugiere que el modelo actual está cerca del
    probables.
 
 La UI llama al endpoint `/predict_batch` para que la z-score in-race
-sea correcta. La imagen Docker está definida en
-`docker/streamlit.Dockerfile` y se incluye en el compose; al cierre
-de este informe la imagen aún no se construyó en este host (parte del
-trabajo abierto §16).
+sea correcta. La imagen Docker se construye con
+`docker compose build streamlit` y forma parte de la pila
+levantada por `docker compose up -d`. La pila completa fue
+verificada extremo-a-extremo:
+
+![Streamlit UI — formulario inicial](figures/15_streamlit_ui.png){ width=95% }
+
+![Streamlit UI — predicciones servidas vía MLflow Registry v1](figures/16_streamlit_predictions.png){ width=95% }
+
+Obsérvese el banner en el sidebar (`Online — model: mlflow v1`) y
+el banner de la respuesta (`Served by model mlflow v1`): la API
+resolvió el modelo desde el Registry **respaldado por Postgres**,
+no por el fallback local. La fila ganadora del field demo (BRAVO,
+p = 0.4945) y el ranking 1–2–3 son consistentes con la probabilidad
+base del 37.8 % más la señal diferencial del modelo.
 
 ---
 
@@ -613,10 +629,7 @@ esto con +0.022 ROC-AUC al sumar dividend + jockey-cross-horse.
   mejorar la coherencia entre las 3 probabilidades top.
 - **Deploy a free tier (Render / Fly.io / EC2 t3.micro).** Opcional
   según el PDF; Docker Compose local cumple el rubric.
-- **MLflow Model Registry contra Postgres exercited end-to-end.** El
-  flow está cableado pero en este host sólo se testeó contra el
-  backend de archivos. Ejercitar contra Postgres requeriría levantar
-  el compose completo y ejecutar `train.py --register`.
+
 
 ---
 

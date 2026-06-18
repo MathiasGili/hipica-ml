@@ -98,7 +98,7 @@ services:
       - ./api:/app/api
       - ./models:/app/models:ro          # local-fallback model artifacts
       - ./data:/app/data:ro              # history.parquet for FE pipeline warmup
-      - mlflow_artifacts:/mlruns:ro      # read-only: API only loads models
+      - mlflow_artifacts:/mlruns         # rw: MLflow's models:/ loader writes a meta cache
     command: >
       uvicorn api.main:app
       --host 0.0.0.0

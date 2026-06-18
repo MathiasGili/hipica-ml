@@ -16,7 +16,8 @@
 - ✅ SHAP notebook (`notebooks/02_explainability.ipynb`) — 4 figures saved.
 - ✅ Feature selection (`notebooks/03_feature_selection.ipynb`) — dropped 3 raw features, ROC-AUC +0.0018.
 - ✅ DVC — `data/processed/history.parquet` tracked, local remote at `~/.dvc-store`, `dvc pull` round-trip verified.
-- ✅ Report — `reports/informe.md` (19 sections) rendered to `reports/informe.pdf` (21 pages, 1.1 MB) via WeasyPrint.
+- ✅ Report — `reports/informe.md` (19 sections) rendered to `reports/informe.pdf` (24 pages, 1.46 MB) via WeasyPrint.
+- ✅ Calibration plot, `/predict_explain` endpoint, full Docker stack live with Streamlit screenshots, MLflow Registry on Postgres exercised end-to-end.
 - 🟡 Hyperparameter tuning — script ready (`src/training/tune.py`), 3-trial smoke test green; full 50-trial run pending.
 
 ---
@@ -203,10 +204,15 @@ These are **not** required by the rubric but raise the polish level:
 - [x] **Calibration plot** — saved to
   `reports/figures/14_calibration.png` and added as §7.1 in the
   informe. Reliability gap < 0.02 in the operating range.
-- [ ] **Build the Streamlit Docker image and bring the full stack up live** —
-  capture a screenshot for the report.
-- [ ] **MLflow Model Registry exercised against Postgres backend** — currently
-  only the file backend is end-to-end tested.
+- [x] **Build the Streamlit Docker image and bring the full stack up live** —
+  `hipica-ml/api:latest` and `hipica-ml/streamlit:latest` built;
+  pila completa levantada con `POSTGRES_PORT=15432 API_PORT=18000
+  docker compose up -d`; screenshots end-to-end en
+  `reports/figures/15_streamlit_ui.png` y `16_streamlit_predictions.png`.
+- [x] **MLflow Model Registry exercised against Postgres backend** —
+  modelo `trifecta-classifier` v1 registrado y promovido a
+  `Production` contra Postgres; API verificada via `/health`
+  reportando `model_name=mlflow, model_version=1`.
 
 ---
 
