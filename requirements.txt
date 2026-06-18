@@ -19,10 +19,10 @@ psycopg2-binary>=2.9.9
 alembic>=1.13.0
 
 # ---------- ML ----------
-scikit-learn>=1.5.0,<2.0
-xgboost>=2.1.0           # 2.x ships CUDA wheels; uses tree_method='hist', device='cuda'
+scikit-learn>=1.7.0,<1.8     # pin minor: joblib pickles are not portable across sklearn minors
+xgboost>=2.1.0               # 2.x ships CUDA wheels; uses tree_method='hist', device='cuda'
 joblib>=1.4.0
-shap>=0.46.0             # explainability (electivo)
+shap>=0.46.0                 # explainability (electivo)
 
 # ---------- Experiment tracking ----------
 mlflow>=2.16.0,<3.0

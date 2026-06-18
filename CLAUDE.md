@@ -72,7 +72,9 @@ test_size=0.2, temporal split (random splits explicitly disabled).
 | F1 @0.5 | 0.396 | 0.402 | **0.453** | +0.057 |
 | Positive rate | 0.378 | 0.378 | 0.378 | — |
 
-MLflow run_id for v4: `98d0a5cce6024f86aa69cfece693d9be`.
+MLflow run_id for v4: `8a3a3d96633c4d7c882ce8e6f105a3d7` (re-trained 2026-06-13
+under pinned `scikit-learn>=1.7,<1.8`; previous `98d0a5cce6024f86aa69cfece693d9be`
+was pickled with sklearn 1.5 and would not unpickle on the current venv).
 Train ROC-AUC: 0.849 (gap to test: 0.145, basically unchanged from v3's
 0.145 — not new overfitting, just more signal extracted on both sides).
 
