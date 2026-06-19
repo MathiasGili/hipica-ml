@@ -545,6 +545,45 @@ no por el fallback local. La fila ganadora del field demo (BRAVO,
 p = 0.4945) y el ranking 1–2–3 son consistentes con la probabilidad
 base del 37.8 % más la señal diferencial del modelo.
 
+### 14.1 Predicción de carreras reales — scrape + OCR + scheduler
+
+La UI también incluye una pestaña **“Race day (scrape)”** que se
+conecta al endpoint `POST /predict_program` y predice todas las
+carreras de una jornada publicada en `hipica.maronas.com.uy`. El
+pipeline en el backend es:
+
+1. Descarga el **Programa** del día (`DocumentType=1` del REST de
+   Marañas), valida que sea un `.xls` real (magic OLE2 D0 CF 11 E0)
+   y descarta páginas HTML de error.
+2. Convierte con **LibreOffice headless** a `.xlsx` para acceder a
+   los shapes/imágenes embebidas.
+3. Lee las entradas (offsets: col 0 post, col 2 caballo, col 11 kg,
+   col 14 sexo, col 15 edad, col 16 jockey).
+4. Extrae los **badges de distancia** (imágenes ~972×520, ordenadas
+   por `anchor.row` del XML de drawing) y las pasa por **Tesseract OCR**
+   con voting cruzado (4 umbrales × 3 PSMs × 2 polaridades, filtro de
+   sanidad 800–3000 m). En el card del 2026-06-19 acertó **9/9**
+   distancias (2000, 1100, 1200, 1000, 1200, 1400, 1600, 1100, 1300
+   mts).
+5. Por cada carrera, arma el batch, llama internamente al mismo
+   `predict_batch` y devuelve probabilidades + ranking.
+
+Un **scheduler dedicado** (`docker/scheduler.Dockerfile`,
+`scheduler/main.py`) corre todos los días a las 06:30 UY con
+APScheduler y pre-calienta el cache invocando `/predict_program` para
+*hoy + mañana* en cada hipódromo configurado. Así, cuando un usuario
+abre el Streamlit a la mañana, la respuesta ya está cacheada en disco
+(la Tabulada/Programa queda en `data/raw/Marañas/`).
+
+![Predicciones reales — Marañas, 9 carreras del 2026-06-19](figures/17_predict_program_20260619.png){ width=95% }
+
+Línea roja punteada = tasa base de Trifecta (0.378). Las barras
+verdes son los 3 caballos con mayor probabilidad de cobrar el show.
+Carreras como C3 (SUPER KOWGIRL p=0.85) o C5 (FARRA CORRIDA p=0.73)
+son **señales fuertes**; otras como C2 o C8 muestran fields parejos
+donde el modelo no tiene mucho que decir (todos en ≈0.27–0.37) y
+seguramente convenga jugar pozo más grande o evitar la apuesta.
+
 ---
 
 ## 15. Tests y CI

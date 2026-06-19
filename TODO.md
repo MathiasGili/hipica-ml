@@ -18,6 +18,8 @@
 - ✅ DVC — `data/processed/history.parquet` tracked, local remote at `~/.dvc-store`, `dvc pull` round-trip verified.
 - ✅ Report — `reports/informe.md` (19 sections) rendered to `reports/informe.pdf` (24 pages, 1.46 MB) via WeasyPrint.
 - ✅ Calibration plot, `/predict_explain` endpoint, full Docker stack live with Streamlit screenshots, MLflow Registry on Postgres exercised end-to-end.
+- ✅ Live race-day predictions — `src/ingestion/program.py` (Programa scrape + Tesseract OCR of distance badges) + `POST /predict_program` endpoint + Streamlit "🗓️ Race day" tab. End-to-end verified on 2026-06-19 (9 races, OCR 9/9 correct).
+- ✅ Daily scheduler — `scheduler/main.py` (APScheduler 06:30 UY) + `docker/scheduler.Dockerfile` + compose service `hipica_scheduler`. Pre-warms the API cache for today + tomorrow on every configured racetrack.
 - 🟡 Hyperparameter tuning — script ready (`src/training/tune.py`), 3-trial smoke test green; full 50-trial run pending.
 
 ---
@@ -186,6 +188,44 @@ experiments ✅, models ✅, **data ✅** (now closed).
 - [x] README § "Data versioning (DVC)" documents the workflow,
   including the regenerate-from-raw fallback if no remote is
   configured.
+
+### 2.5 Live race-day predictions + daily scheduler — ✅ done
+**Why**: replaces the manual demo form with a real "scrape today's
+program and predict every race" flow. Demonstrates the full operational
+loop (scrape → parse → OCR → feature engineering → inference → UI)
+running on a schedule.
+
+Modules:
+- [x] `src/ingestion/program.py` — `fetch_program(racetrack_id, race_date)`
+  downloads `DocumentType=1`, parses entries (col offsets:
+  0=post, 2=horse, 11=kg, 13=track_pref, 14=sex, 15=age, 16=jockey),
+  detects HTML error pages by BIFF OLE2 magic, converts .xls → .xlsx
+  via LibreOffice headless, extracts the embedded distance badges
+  (~972×520) ordered by drawing anchor row, and OCRs them with
+  Tesseract (voting across thresholds + PSMs + polarity, sanity
+  filter 800–3000 m).
+- [x] `POST /predict_program` in `api/main.py` — wraps fetch + parse +
+  per-race prediction; returns ranked horses per race with
+  `race_index`, `distance_m`, `post_time`, `predictions[]`.
+  Returns 404 when no Programa is published for the requested date.
+- [x] `app/streamlit_app.py` — new "🗓️ Race day (scrape)" tab with
+  date picker + racetrack dropdown; old manual flow preserved under
+  "✏️ Manual" tab.
+- [x] `scheduler/main.py` + `docker/scheduler.Dockerfile` — APScheduler
+  cron (06:30 America/Montevideo by default) that calls
+  `/predict_program` for today + tomorrow on every configured
+  racetrack (`RACETRACK_IDS=1` by default).
+- [x] Compose service `hipica_scheduler` wired in; API mount of
+  `./data:/app/data` flipped to rw (the API now persists Programas
+  under `data/raw/Maroñas/`).
+- [x] Tesseract + LibreOffice added to `docker/api.Dockerfile`;
+  `pytesseract`, `Pillow`, `APScheduler` added to `requirements.txt`.
+
+End-to-end verified on 2026-06-19:
+- `/predict_program` returns 9 races with OCR 9/9 correct
+  (2000, 1100, 1200, 1000, 1200, 1400, 1600, 1100, 1300 mts).
+- Scheduler logs: `rt=1 date=2026-06-19 → 9 races (model=mlflow v1)`.
+- 2026-06-18 (no Programa) → 404 with clean detail message.
 
 ---
 

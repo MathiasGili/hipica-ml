@@ -113,9 +113,28 @@ threshold to ~0.55 to trade recall for tighter precision.
 ## Tests
 
 ```bash
-python -m pytest tests/test_features.py -v
-# 7 passed in <1s, including 2 explicit anti-skew regression tests.
+python -m pytest tests/ -v
+# 9 passed in ~2s, including 2 anti-skew regression tests and 2 Programa
+# defensive tests (HTML-as-xls detection + valid OLE2 magic).
 ```
+
+## Live race-day predictions
+
+The stack includes a pipeline to scrape an entire Marañas race day,
+OCR the distance badges from the published Programa, and predict every
+race via `POST /predict_program`. A daily scheduler
+(`scheduler/main.py`, runs at 06:30 UY) pre-warms the cache for
+today + tomorrow so the Streamlit UI is instant by morning.
+
+```bash
+# One-shot call (cached in data/raw/Mara\u00f1as/ on subsequent calls)
+curl -s -X POST http://localhost:18000/predict_program \
+  -H "Content-Type: application/json" \
+  -d '{"race_date": "2026-06-19", "racetrack_id": 1}' | jq
+```
+
+Or open the **“Race day (scrape)”** tab on http://localhost:8501,
+pick the date and click “Cargar y predecir”.
 
 ## Data versioning (DVC)
 
