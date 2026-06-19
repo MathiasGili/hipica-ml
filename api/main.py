@@ -38,6 +38,10 @@ from .schemas import (
     PredictExplainResponse,
     PredictOnlineRequest,
     PredictOnlineResponse,
+    PredictProgramRequest,
+    PredictProgramResponse,
+    ProgramHorsePrediction,
+    ProgramRacePrediction,
 )
 
 logger = logging.getLogger("hipica.api")
@@ -201,6 +205,90 @@ def predict_explain(req: PredictExplainRequest) -> PredictExplainResponse:
         p_trifecta=proba,
         base_value=base_value,
         top_contributions=top,
+        model_name=m.source,
+        model_version=m.version,
+        served_at=datetime.now(timezone.utc),
+    )
+
+
+# ---------------------------------------------------------------------------
+@app.post("/predict_program", response_model=PredictProgramResponse)
+def predict_program(req: PredictProgramRequest) -> PredictProgramResponse:
+    """Scrape the published Programa for a race day and predict every race.
+
+    Steps:
+      1. Download the Programa (.xls) from the Mara\u00f1as REST service.
+      2. Parse horse entries + OCR the distance badges.
+      3. For each race, run the same FE pipeline + model used by
+         ``/predict_batch`` and return ranked predictions.
+    """
+    from pathlib import Path
+    from src.config import RAW_DIR
+    from src.ingestion.program import fetch_program
+
+    m = _model()
+    races = fetch_program(
+        racetrack_id=req.racetrack_id,
+        race_date=datetime.combine(req.race_date, datetime.min.time()),
+        raw_dir=Path(RAW_DIR),
+        force=req.force_refresh,
+    )
+    if not races:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No Programa published for racetrack {req.racetrack_id} on {req.race_date}",
+        )
+
+    out: list[ProgramRacePrediction] = []
+    for race in races:
+        if not race.entries:
+            continue
+        rows = [
+            {
+                "horse_name": e.horse_name,
+                "race_date": pd.Timestamp(req.race_date),
+                "racetrack_id": req.racetrack_id,
+                "distance_m": race.distance_m or 1100,  # safe default if OCR failed
+                "kg": e.kg,
+                "post_position": e.post_position,
+                "horse_age": e.horse_age,
+                "sex_code": e.sex_code,
+                "jockey_name": e.jockey_name,
+            }
+            for e in race.entries
+        ]
+        targets = pd.DataFrame(rows)
+        feats = m.feature_pipeline.transform(targets)
+        probas = m.estimator.predict_proba(feats[ALL_FEATURES])[:, 1]
+        ranked = sorted(
+            zip(race.entries, probas), key=lambda pair: pair[1], reverse=True
+        )
+        rank_by_name = {e.horse_name: i for i, (e, _) in enumerate(ranked, start=1)}
+        preds = [
+            ProgramHorsePrediction(
+                horse_name=e.horse_name,
+                post_position=e.post_position,
+                kg=e.kg,
+                horse_age=e.horse_age,
+                sex_code=e.sex_code,
+                jockey_name=e.jockey_name,
+                p_trifecta=float(p),
+                rank=rank_by_name[e.horse_name],
+            )
+            for e, p in zip(race.entries, probas)
+        ]
+        out.append(ProgramRacePrediction(
+            race_index=race.race_index,
+            distance_m=race.distance_m,
+            post_time=race.post_time,
+            predictions=preds,
+        ))
+
+    return PredictProgramResponse(
+        race_date=req.race_date,
+        racetrack_id=req.racetrack_id,
+        n_races=len(out),
+        races=out,
         model_name=m.source,
         model_version=m.version,
         served_at=datetime.now(timezone.utc),

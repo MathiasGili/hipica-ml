@@ -105,3 +105,43 @@ class PredictExplainResponse(BaseModel):
     model_name: str
     model_version: str | None
     served_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Race-day program (live scrape + predict)
+# ---------------------------------------------------------------------------
+class PredictProgramRequest(BaseModel):
+    """Ask the API to scrape and predict a whole race day."""
+
+    race_date: date
+    racetrack_id: int = Field(default=1, description="1=Mara\u00f1as, 13=Las Piedras, ...")
+    force_refresh: bool = Field(default=False,
+                                description="Re-download the Programa even if it exists on disk")
+
+
+class ProgramHorsePrediction(BaseModel):
+    horse_name: str
+    post_position: int
+    kg: float
+    horse_age: int | None = None
+    sex_code: str | None = None
+    jockey_name: str | None = None
+    p_trifecta: float = Field(..., ge=0, le=1)
+    rank: int
+
+
+class ProgramRacePrediction(BaseModel):
+    race_index: int = Field(..., ge=1, description="1-based within the day")
+    distance_m: int
+    post_time: str | None = None
+    predictions: list[ProgramHorsePrediction]
+
+
+class PredictProgramResponse(BaseModel):
+    race_date: date
+    racetrack_id: int
+    n_races: int
+    races: list[ProgramRacePrediction]
+    model_name: str
+    model_version: str | None
+    served_at: datetime

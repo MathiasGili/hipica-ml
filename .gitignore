@@ -15,6 +15,7 @@ data/interim/
 data/processed/*
 !data/processed/.gitignore
 !data/processed/*.dvc
+!data/processed/*.parquet
 mlruns/
 mlflow_artifacts/
 

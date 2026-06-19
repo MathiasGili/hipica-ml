@@ -97,7 +97,7 @@ services:
       - ./src:/app/src
       - ./api:/app/api
       - ./models:/app/models:ro          # local-fallback model artifacts
-      - ./data:/app/data:ro              # history.parquet for FE pipeline warmup
+      - ./data:/app/data                 # rw: API writes downloaded Programas here
       - mlflow_artifacts:/mlruns         # rw: MLflow's models:/ loader writes a meta cache
     command: >
       uvicorn api.main:app
@@ -135,6 +135,26 @@ services:
       --server.port 8501
       --server.address 0.0.0.0
       --server.headless true
+    networks: [hipica_net]
+
+  # --------------------------------------------------------------------------
+  # Scheduler — calls /predict_program once a day to pre-warm the cache
+  # --------------------------------------------------------------------------
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler.Dockerfile
+    image: hipica-ml/scheduler:latest
+    container_name: hipica_scheduler
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8000
+      RACETRACK_IDS: "${RACETRACK_IDS:-1}"
+      CRON_HOUR: "${CRON_HOUR:-6}"
+      CRON_MINUTE: "${CRON_MINUTE:-30}"
+      RUN_ON_START: "${RUN_ON_START:-true}"
     networks: [hipica_net]
 
   # --------------------------------------------------------------------------

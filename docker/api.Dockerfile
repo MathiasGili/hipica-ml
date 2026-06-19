@@ -14,7 +14,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential libpq-dev curl \
+ && apt-get install -y --no-install-recommends \
+      build-essential libpq-dev curl \
+      tesseract-ocr libreoffice-calc \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
