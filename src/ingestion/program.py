@@ -105,6 +105,20 @@ def fetch_program_xls(
         logger.warning("No Programa published for %s on %s", track, slug)
         return None
     s._download_excel(docs[0]["Uri"], dest)
+
+    # Defensive: the Maroñas service sometimes returns an HTML error page
+    # with a .xls extension when the Programa is not actually published yet.
+    # Detect by reading the first bytes — real BIFF files start with the
+    # OLE2 magic D0 CF 11 E0.
+    head = dest.open("rb").read(8)
+    if not head.startswith(b"\xd0\xcf\x11\xe0"):
+        logger.warning(
+            "Downloaded Programa for %s on %s is not a valid .xls (head=%r) — removing",
+            track, slug, head[:16],
+        )
+        dest.unlink(missing_ok=True)
+        return None
+
     logger.info("Downloaded %s", dest.name)
     return dest
 
