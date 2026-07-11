@@ -17,7 +17,7 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requirements.txt /tmp/requirements.txt
+COPY docker/requirements-streamlit.txt /tmp/requirements.txt
 RUN pip install --upgrade pip \
  && pip install -r /tmp/requirements.txt
 

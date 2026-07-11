@@ -1,0 +1,33 @@
+# ============================================================================
+# API runtime deps — inference only. CPU-only XGBoost, MLflow client only.
+# Keep in sync with the training image (docker/training.Dockerfile) for the
+# core FE stack (pandas / numpy / sklearn / xgboost) to preserve train-serve
+# parity.
+# ============================================================================
+
+# ---------- Core data ----------
+pandas>=2.2.0,<3.0
+numpy>=1.26.0,<2.2
+pyarrow>=15.0.0          # reads history.parquet
+xlrd==2.0.1              # legacy .xls (Maroñas "tabuladas")
+
+# ---------- ML (inference) ----------
+scikit-learn>=1.7.0,<1.8
+xgboost-cpu>=2.1.0       # CPU-only wheel; drops the ~400MB nvidia/* deps
+joblib>=1.4.0
+
+# ---------- Model registry client ----------
+mlflow-skinny>=2.16.0,<3.0
+
+# ---------- API ----------
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0,<3.0
+
+# ---------- Scraping (used by /predict_program) ----------
+requests>=2.32.0
+tenacity>=8.3.0
+
+# ---------- OCR (Programa distance badges) ----------
+Pillow>=10.0.0
+pytesseract>=0.3.10

@@ -13,15 +13,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/app
 
+# Only tesseract-ocr is required at runtime (OCR for distance badges) plus
+# curl for the healthcheck. All Python deps ship as manylinux wheels so we do
+# NOT need build-essential/libpq-dev, and LibreOffice is never used (the .xls
+# loader uses xlrd).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      build-essential libpq-dev curl \
-      tesseract-ocr libreoffice-calc \
+      curl tesseract-ocr \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt /tmp/requirements.txt
+COPY docker/requirements-api.txt /tmp/requirements.txt
 RUN pip install --upgrade pip \
  && pip install -r /tmp/requirements.txt
 

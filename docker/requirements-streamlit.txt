@@ -1,0 +1,7 @@
+# ============================================================================
+# Streamlit UI runtime deps — the UI is a thin client for the FastAPI service.
+# Only needs streamlit, requests and pandas for the results table.
+# ============================================================================
+streamlit>=1.36.0
+requests>=2.32.0
+pandas>=2.2.0,<3.0
