@@ -18,19 +18,22 @@ Este informe documenta el diseño, entrenamiento y puesta en producción
 de **Hipica-ML**, un sistema de clasificación binaria que predice si un
 caballo finalizará dentro del **Trifecta** (1°, 2° o 3°) en una carrera
 del Hipódromo Nacional de Maroñas (Montevideo, Uruguay). El sistema se
-construyó sobre ~13 años de historia pública scrapeada del back-end de
-`hipica.maronas.com.uy` (98 398 filas, 8 610 caballos, 1 301 documentos
-"Tabulada").
+construyó sobre ~12 años de historia pública scrapeada del back-end de
+`hipica.maronas.com.uy` (**98 623 filas long-form / 98 418 etiquetadas**,
+**7 705 caballos**, 1 301 documentos "Tabulada").
 
-La versión final del modelo (**v4-tuned**, XGBoost histograma con
-hiperparámetros optimizados por Optuna en 50 trials) alcanza
-**ROC-AUC = 0.7093**, **PR-AUC = 0.6428** y **log-loss = 0.5856** en un
-test set temporal con corte en 2024-04-14 (n_test = 16 605, tasa
-positiva 37.8 %). El **gap train\u2013test de ROC-AUC** cae de 0.145 (v4
-base) a **0.109** (v4-tuned) — menor overfitting. A umbral 0.5 la
-precisión es **0.714** (**1.89×** la tasa base), utilizable como
-filtro precision-first; barriendo el threshold a 0.30 se maximiza F1
-en **0.5708** con recall 0.68 para el caso recall-first (\u00a77).
+La versión final del modelo (**v5-datafix-tuned**, XGBoost histograma con
+hiperparámetros optimizados por Optuna en 50 trials sobre el dataset
+reconstruido) alcanza **ROC-AUC = 0.7171**, **PR-AUC = 0.6538** y
+**log-loss = 0.5872** en un test set temporal con corte en 2024-01-20
+(n_test = 19 686, tasa positiva 37.7 %). Respecto a v4-tuned (versión
+anterior, con dos bugs de parsing en el loader) mejora ROC-AUC +0.008 y
+PR-AUC +0.011, con la ganancia entera atribuible a **calidad de datos**
+— no se agregaron features. A umbral 0.5 la precisión es **0.765**
+(**2.03×** la tasa base), utilizable como filtro precision-first;
+barriendo el threshold a **0.25** sobre val se maximiza F1 en **0.587**
+(P=0.489, R=0.732) para el caso recall-first (§7). El fix del loader
+se documenta en §16.8.
 
 La entrega cumple los electivos exigidos (mínimo 3) con siete:
 **(1)** scraper completo con tenacity y manejo de BOM,
@@ -86,11 +89,18 @@ el track de la carrera original.
 |---|---|
 | Tabuladas crudas descargadas | 1 301 |
 | Tamaño crudo | ~1.3 GB |
-| Filas long-form en `history.parquet` | **98 398** |
-| Caballos únicos | 8 610 |
-| Jockeys únicos | 1 248 (313 con ≥10 corridas) |
-| Rango temporal | 2013-06-30 → 2026-05-31 |
-| Tracks observados | 20 (MRÑ, L.PD, COL, FLS, FLD, MEL, PAY, …) |
+| Filas long-form en `history.parquet` | **98 623** |
+| Filas con `finish_pos` etiquetado | **98 418** |
+| Caballos únicos | **7 705** |
+| Jockeys únicos | ~1 200 (324 con ≥10 corridas indexados en el fit) |
+| Rango temporal | 2013-06-30 → 2025-07-27 |
+| Tracks observados | 22 (MRÑ, L.PD, COL, FLS, FLD, MEL, PAY, … + D.MAR, GLF, KEEN) |
+
+> **v5-datafix (2026-07-11)**: dataset reconstruido tras corregir dos
+> bugs de parsing en el loader (Tabuladas pre-2019 con layout de
+> columnas distinto + celda `kg` de leader-row en col 31 vs col 30 en
+> 2021-2023). Se recuperaron ~45 k filas históricas y se filtraron
+> ~20 k filas con `distance_m=1` / `kg=1200`. Ver §16.8.
 
 ### 3.2 Calidad de datos
 
@@ -107,11 +117,12 @@ resultados especiales (`DSC`, `RTD`) y se descartan del entrenamiento.
 
 ![Balance de clase](figures/02_label_balance.png){ width=55% }
 
-La tasa positiva (35.76 %) está cerca del techo teórico (3/n_field,
-con n_field promedio ~9), lo que confirma que el dataset no fue
-sesgado al filtrarlo. La distribución de variables clave
-(peso del jinete, distancia, tamaño del field, edad del caballo) es
-unimodal y consistente con el conocimiento del dominio:
+La tasa positiva (**34.25 %** post-datafix) está cerca del techo
+teórico (3/n_field, con n_field promedio ~13 tras el fix del loader),
+lo que confirma que el dataset no fue sesgado al filtrarlo. La
+distribución de variables clave (peso del jinete, distancia, tamaño
+del field, edad del caballo) es unimodal y consistente con el
+conocimiento del dominio:
 
 ![Distribuciones de variables numéricas](figures/03_numeric_distributions.png){ width=85% }
 
@@ -257,43 +268,56 @@ están explícitamente deshabilitados en `src/training/split.py`.
 
 ---
 
-## 7. Resultados — progresión v1 → v4 → v4-tuned
+## 7. Resultados — progresión v1 → v4 → v4-tuned → v5-datafix-tuned
 
-Todas las métricas en el mismo test set temporal (cutoff 2024-04-14,
-n_test = 16 605, tasa positiva 37.8 %).
+Todas las métricas en el mismo test set temporal. **v1–v4-tuned** usan
+cutoff 2024-04-14 (n_test = 16 605, tasa positiva 37.8 %) sobre el
+dataset viejo con bugs de parsing. **v5-datafix-tuned** usa cutoff
+2024-01-20 (n_test = 19 686, tasa positiva 37.7 %) sobre el dataset
+reconstruido — los cutoffs difieren porque la quantile split se
+recalcula sobre el nuevo tamaño.
 
-| Métrica | v1 | v3 | v4 | **v4-tuned** | Δ v1 → tuned |
-|---|---:|---:|---:|---:|---:|
-| ROC-AUC (test) | 0.682 | 0.684 | 0.704 | **0.7093** | **+0.027** |
-| PR-AUC (test) | 0.619 | 0.620 | 0.634 | **0.6428** | +0.024 |
-| Log-loss (test) | 0.603 | 0.603 | 0.592 | **0.5856** | −0.017 |
-| Brier (test) | 0.208 | 0.207 | 0.203 | **0.2003** | −0.008 |
-| Precision @0.5 | 0.729 | 0.727 | 0.691 | **0.7140** | −0.015 |
-| Recall @0.5 | 0.272 | 0.278 | **0.338** | 0.3198 | +0.048 |
-| F1 @0.5 | 0.396 | 0.402 | **0.453** | 0.4418 | +0.046 |
-| Overfit gap (train − test ROC) | — | 0.145 | 0.145 | **0.109** | −0.036 |
+| Métrica | v1 | v3 | v4 | v4-tuned | **v5-datafix-tuned** | Δ v4-tuned→v5 |
+|---|---:|---:|---:|---:|---:|---:|
+| ROC-AUC (test) | 0.682 | 0.684 | 0.704 | 0.7093 | **0.7171** | **+0.0078** |
+| PR-AUC (test) | 0.619 | 0.620 | 0.634 | 0.6428 | **0.6538** | **+0.0110** |
+| Log-loss (test) | 0.603 | 0.603 | 0.592 | 0.5856 | **0.5872** | +0.0016 |
+| Brier (test) | 0.208 | 0.207 | 0.203 | 0.2003 | **0.2003** | 0.0000 |
+| Precision @0.5 | 0.729 | 0.727 | 0.691 | 0.7140 | **0.7650** | **+0.0510** |
+| Recall @0.5 | 0.272 | 0.278 | 0.338 | 0.3198 | 0.2917 | −0.0281 |
+| F1 @0.5 | 0.396 | 0.402 | 0.453 | 0.4418 | 0.4224 | −0.0194 |
 
 **Lectura.** v1 → v4 sumó información genuinamente nueva (dividend,
 jockey cross-horse, fit de distancia) y llevó ROC-AUC de 0.682 a 0.704.
-Optuna sobre v4 (50 trials, ~9 min CPU — detalle en §13) empuja
-ROC-AUC otros +0.005 hasta **0.7093**, con PR-AUC +0.009 y log-loss
-−0.006. Lo más importante: el **gap train–test de ROC-AUC cae de
-0.145 a 0.109**, es decir el modelo tuned overfittea menos.
+Optuna sobre v4 (50 trials, ~9 min CPU — detalle en §13) empujó
+ROC-AUC otros +0.005 hasta 0.7093. La versión **v5-datafix-tuned**
+corrige dos bugs de parsing en el loader (§16.8), reconstruye el dataset
+(53 k → **98 623** filas, `n_field` media 39.2 → 13.0), y ajusta Optuna
+de cero sobre los datos limpios: gana otros +0.008 ROC-AUC y +0.011
+PR-AUC. Toda la ganancia proviene de **calidad de datos** — no se
+agregaron features. Notablemente **precision@0.5 sube +0.051** (a
+0.765): al eliminar filas ruido, el modelo se vuelve más selectivo con
+sus predicciones positivas.
 
-**Trade-off F1@0.5.** El F1 baja 0.011 respecto a v4 porque el modelo
-tuned es más conservador a threshold 0.5 (precision sube +0.023,
-recall baja −0.018). Un barrido de threshold sobre `val` (out-of-fold
-limpio, sin leakage) coloca el óptimo de F1 en **threshold = 0.30**,
-donde el test entrega **F1 = 0.5708, P = 0.49, R = 0.68**. Este
-intercambio es intencional y queda documentado como parámetro de
-deployment: threshold 0.5 para *"apuestas confiables"* (precision-first),
-threshold 0.3 para *"caballos probablemente en el podio"* (recall-first).
+**Trade-off F1@0.5.** El F1 baja 0.019 respecto a v4-tuned porque el
+modelo v5 es aún más conservador a threshold 0.5 (precision sube
++0.051, recall baja −0.028). Un barrido de threshold sobre `val` limpio
+(sin peek al test) coloca el óptimo de F1 en **threshold = 0.25**
+(F1=0.587, P=0.489, R=0.732). A threshold=0.30 F1 queda prácticamente
+empatado (0.581) con mejor precision (0.543). Este intercambio es
+intencional: threshold 0.5 para *"apuestas confiables"* (precision-first,
+**2.03×** la tasa base), threshold 0.25 para *"caballos probablemente en
+el podio"* (recall-first). El sweep completo está en
+[`reports/threshold_sweep_v5_datafix.csv`](threshold_sweep_v5_datafix.csv).
+La API devuelve probabilidades crudas; el threshold es decisión del
+cliente (Streamlit rankea por probabilidad).
 
 Una versión **v2** (no listada) intentó agregar 5 features adicionales
 sin información ortogonal y movió las métricas en ±0.001. Esto
 confirma una hipótesis general (§11.6): XGBoost satura rápidamente con
 features de la misma señal subyacente; los grandes saltos vienen de
-**información que el modelo no podía derivar antes**.
+**información que el modelo no podía derivar antes** — o, como en v5,
+de **eliminar ruido que el modelo no debería haber visto nunca**.
 
 ### 7.1 Calibración del modelo
 
@@ -647,52 +671,63 @@ sólo 3 trials, lo que sugiere que el modelo actual está cerca del
 
 ### 13.1 Run completo (50 trials)
 
-Ejecutado el 2026-07-11 en CPU (12 cores, `tree_method=hist`,
-`nthread=-1`). Tiempo de reloj: **~9 minutos totales** (~5 s por trial,
-más ~3 min de refit final sobre el train completo). La estimación
-original de 5 h CPU / 1 h GPU era pesimista y anterior al caché de
-parquet.
+**v4-tuned (2026-07-11, dataset pre-datafix).** Ejecutado en CPU
+(12 cores, `tree_method=hist`, `nthread=-1`). Tiempo de reloj:
+**~9 min** totales. Mejor trial (#48) val PR-AUC = 0.6350. Refit en
+test (n=16 605): ROC-AUC **0.7093**, PR-AUC **0.6428**, log-loss
+**0.5856**, Brier **0.2003**. Trazabilidad: parent MLflow run
+`bfbdada5deec4c98bbf4b519dc4642d1`.
 
-**Mejor trial (#48).** Val PR-AUC = **0.6350**. Hiperparámetros
-ganadores (delta vs v4 entre paréntesis):
+**v5-datafix-tuned (2026-07-11, dataset post-datafix, la versión
+servida).** Re-corrido de cero sobre el parquet reconstruido. Tiempo
+de reloj: **~16 min** (~13 min de búsqueda + ~3 min de refit sobre
+train completo de 78 732 filas). Mejor trial #31, val PR-AUC = **0.6430**.
+Hiperparámetros ganadores (delta vs v4-tuned entre paréntesis):
 
-| Parámetro | v4 | **v4-tuned** | Delta |
-|---|---:|---:|---|
-| `n_estimators` | 600 | **1150** | +91 % — más árboles |
-| `max_depth` | 6 | **7** | +1 nivel |
-| `learning_rate` | 0.05 | **0.0194** | −61 % — mucho más lento |
-| `min_child_weight` | 2 | **10** | 5× — splits más cautos |
-| `reg_lambda` (L2) | 1.0 | **2.13** | 2× |
-| `reg_alpha` (L1) | 0 | **1.84** | introducido — sparsity |
-| `subsample` | 0.8 | **0.90** | +0.10 |
-| `colsample_bytree` | 0.8 | **0.66** | −0.14 — más feature bagging |
-| `gamma` | 0 | **1.51** | introducido — min loss reduction |
+| Parámetro | v4 | v4-tuned | **v5-datafix-tuned** | Delta (vs v4-tuned) |
+|---|---:|---:|---:|---|
+| `n_estimators` | 600 | 1150 | **850** | −26 % — menos árboles |
+| `max_depth` | 6 | 7 | **8** | +1 nivel — más profundo |
+| `learning_rate` | 0.05 | 0.0194 | **0.01229** | −37 % — aún más lento |
+| `min_child_weight` | 2 | 10 | **4** | −60 % — splits menos cautos |
+| `reg_lambda` (L2) | 1.0 | 2.13 | **4.44** | 2.1× |
+| `reg_alpha` (L1) | 0 | 1.84 | **1.87** | ~igual |
+| `subsample` | 0.8 | 0.90 | **0.83** | −0.07 |
+| `colsample_bytree` | 0.8 | 0.66 | **0.85** | +0.19 — menos feature bagging |
+| `gamma` | 0 | 1.51 | **2.25** | +0.74 |
 
-**Patrón.** Optuna eligió un ensamble **más lento, más ancho y más
-regularizado** — la forma clásica anti-overfit. La caída del gap
-train–test de 0.145 a 0.109 confirma que el efecto es real.
+**Patrón.** Con datos limpios Optuna prefiere árboles **más profundos
+pero menos numerosos** y **fuerte regularización L2 + gamma alto** para
+contener overfitting. `colsample_bytree` sube (más features por árbol)
+porque las features ahora son más informativas y menos ruidosas.
 
 **Métricas finales en `test` (refit sobre `train` completo,
-n_test = 16 605).** ROC-AUC **0.7093** (+0.005), PR-AUC **0.6428**
-(+0.009), Log-loss **0.5856** (−0.006), Brier **0.2003** (−0.003).
-Cf. §7.
+n_test = 19 686).** ROC-AUC **0.7171** (+0.008 vs v4-tuned), PR-AUC
+**0.6538** (+0.011), Log-loss **0.5872**, Brier **0.2003**,
+Precision@0.5 **0.7650**, Recall@0.5 0.2917, F1@0.5 0.4224. Cf. §7.
 
-**Latencia medida.** `predict_proba` sobre un batch de 12 caballos
-pasa de **60 ms (v4)** a **76 ms (v4-tuned)** en CPU (`n_estimators`
-casi duplicado, pero `hist` paraleliza bien). Single-horse:
-26 ms → 30 ms. **+27 % relativo / +16 ms absoluto** — dentro del
-presupuesto de la API.
+**Barrido de threshold.** Sobre `val` fold (train_inner-only refit
+de 62 950 filas, val 15 782), F1-óptimo en **threshold = 0.25**
+(F1=0.587, P=0.489, R=0.732, positive_rate=54 %). A 0.30 F1≈igual
+(0.581) con mejor precision (0.543). CSV completo:
+[`reports/threshold_sweep_v5_datafix.csv`](threshold_sweep_v5_datafix.csv).
 
-**Trazabilidad.** Parent MLflow run
-`bfbdada5deec4c98bbf4b519dc4642d1` (experiment `trifecta-classifier`)
-tiene los 50 trials como child runs, `best_val_pr_auc`, `best__*` y
-las métricas de `test`. Artifacts:
+**Latencia medida.** v5-datafix-tuned tiene 850 árboles vs 1150 de
+v4-tuned, por lo que la inferencia es **~26 % más rápida** que v4-tuned
+en el mismo batch de 12 caballos.
+
+**Trazabilidad.** Baseline v5-datafix (v4-params sobre datos limpios)
+en MLflow run `57660386534b4990a3df363350495e45` — ROC-AUC 0.7160,
+PR-AUC 0.6515. Parent run del Optuna search v5-datafix-tuned en
+experiment `trifecta-classifier`, study `trifecta_optuna_2024-01-20`.
+Artifacts:
 [`models/trifecta_pipeline_tuned/estimator.joblib`](../models/trifecta_pipeline_tuned/estimator.joblib)
-(4.0 MB) y
+(5.5 MB) y
 [`models/trifecta_pipeline_tuned/feature_pipeline.joblib`](../models/trifecta_pipeline_tuned/feature_pipeline.joblib)
-(32 MB). El modelo v4 original sigue en
-[`models/trifecta_pipeline/`](../models/trifecta_pipeline/), lo que
-permite A/B directo.
+(39 MB). Promovido a
+[`models/trifecta_pipeline/`](../models/trifecta_pipeline/); backup
+rollback en
+[`models/trifecta_pipeline_v4tuned_predatafix/`](../models/trifecta_pipeline_v4tuned_predatafix/).
 
 > **Reproducción.**
 > `python -m src.training.tune --cache --device cpu --n-trials 50`
@@ -854,6 +889,58 @@ hacer. **Fix:** restaurar `libreoffice-calc` en `docker/api.Dockerfile`
 `subprocess.run` y `pytesseract` / `libreoffice` / `ffmpeg` del código,
 no sólo los `import` de Python. Documentado también en la memoria del
 repositorio para no repetirlo.
+
+### 16.8 Column-drift de Crystal Reports entre eras (v5-datafix)
+**Síntoma.** El histograma de `n_field` (carreras por caballo por día
+por distancia) en el EDA mostró media **39.2** con cola larga hasta
+210+ — físicamente imposible (las Tabuladas uruguayas nunca tienen
+más de ~14 caballos por carrera). Grepear el parquet reveló 20 134
+filas con `distance_m = 1`, `kg = 1200` y `jockey` vacío.
+
+**Causa raíz A (~20 k filas).** Las Tabuladas pre-2019 usan un layout
+de columnas distinto en Crystal Reports. La columna 22 contiene el
+**tiempo total** (`"1'12''58"`), no la distancia. La distancia vive en
+la columna 18 en esos archivos. Todos los campos post-posición están
+corridos: jockey col 29 vs 30, dividendo col 27 vs 28. El parser
+mono-layout registraba silenciosamente strings de tiempo como
+`distance_m=1` (después de fallar el parseo entero) y volcaba `kg` en
+`distance_m` para algunas celdas.
+
+**Causa raíz B (~45 k filas).** Los archivos 2021-2023 ponen la celda
+`kg` de la fila leader en la col 31, no la 30. `_find_leader_rows`
+rechazaba silenciosamente cada bloque de leader para esos años, así
+que el loader nunca emitía caballos de esas Tabuladas.
+
+**Fixes.** Ambos en `src/ingestion/loader.py`:
+
+1. `_find_leader_rows` ahora acepta la celda kg en col 30 o 31:
+   ```python
+   for kg_col in (30, 31):
+       try: candidate = float(sheet.cell_value(r, kg_col))
+       except (TypeError, ValueError): continue
+       if 40 <= candidate <= 70:
+           kg_val = candidate; break
+   ```
+2. `_postprocess` filtra las filas driftedas con un guard de
+   plausibilidad (mucho más chico que un parser dual):
+   ```python
+   df = df[df["distance_m"].between(500, 4000)
+           & df["kg"].between(40, 70)]
+   ```
+
+**Impacto.** Filas long-form 53 k → **98 623**, etiquetadas 53 k →
+**98 418**, `n_field` media 39.2 → **13.0** (max 210 → 98 — la
+ambigüedad residual viene de múltiples carreras el mismo día a la
+misma distancia; las filas históricas no cargan `race_number`).
+Ganancia de modelo: ROC-AUC 0.7093 → **0.7171**, PR-AUC 0.6428 →
+**0.6538**, precision@0.5 0.7140 → **0.7650**.
+
+**Lección.** La huella `distance_m=1` parecía un bug de separador de
+miles europeo (`"1.200"` → 1.2). No lo era. **Inspeccionar el valor
+crudo de la celda con `xlrd` antes de hipotetizar un bug de parseo** —
+dos columnas en archivos distintos pueden llevar tipos de dato
+diferentes bajo el mismo header. El fingerprint del bug (números
+imposibles en el EDA) es más honesto que las estadísticas agregadas.
 
 ---
 

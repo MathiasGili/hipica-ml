@@ -70,3 +70,8 @@ Thumbs.db
 
 # --- EB CLI internal state ----------------------------------------------------
 .elasticbeanstalk/
+
+# --- Extra model dirs (only ship the production model) -----------------------
+models/trifecta_pipeline_tuned/
+models/trifecta_pipeline_v4tuned_predatafix/
+models/trifecta_pipeline_v4_backup/

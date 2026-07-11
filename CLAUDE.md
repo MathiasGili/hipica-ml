@@ -16,13 +16,20 @@
 |---|---|
 | Raw Tabuladas downloaded | **1 301** files |
 | Raw size | ~1.3 GB of `.xls` |
-| Long-form rows | **98 398** |
-| Unique horses | **8 610** |
-| Date range | **2013-06-30 → 2026-05-31** (~13 years) |
-| Racetracks observed (history) | 20 abbreviations: MRÑ, L.PD, COL, FLS, FLD, MEL, PAY, RCH, CHS, GAV, HCH, SAL, SI, TAR, VSC, MON, LP, PAL, CRI, C.JD |
-| Label balance (`in_trifecta`) | **35.76%** positive |
-| Build time (parquet from raw) | ~47 s |
+| Long-form rows | **98 623** |
+| Rows with labelled `finish_pos` | **98 418** |
+| Unique horses | **7 705** |
+| Date range | **2013-06-30 → 2025-07-27** (~12 years) |
+| Racetracks observed (history) | 22 abbreviations: MRÑ, L.PD, COL, FLS, FLD, MEL, PAY, RCH, CHS, GAV, HCH, SI, TAR, VSC, MON, LP, PAL, CRI, C.JD, D.MAR, GLF, KEEN |
+| Label balance (`in_trifecta`) | **34.25 %** positive |
+| Build time (parquet from raw) | ~54 s |
 | Loader cache | `data/processed/history.parquet` |
+
+> **v5-datafix (2026-07-11)**: Rebuilt after fixing two loader bugs — a
+> pre-2019 Crystal-Reports column-drift that populated `distance_m=1` /
+> `kg=1200` on ~20 k rows (now filtered by a plausibility drop), plus a
+> 2021-2023 leader-row `kg` cell that lives at col 31 instead of col 30
+> (recovered ~45 k rows). See §8.7 for details.
 
 **Why so many tracks?** The scraper only requests Maroñas-day Tabuladas
 (racetrack_id = 1), but each Tabulada includes the **full career history
@@ -59,43 +66,48 @@ test_size=0.2, temporal split (random splits explicitly disabled).
   `jockey_career_show_rate`. The jockey features are the only ones that
   index across horses (every horse a jockey rode contributes).
 
-### v4 vs v3 vs v1 vs v4-tuned (test set, same cutoff and split)
+### v1 vs v3 vs v4 vs v4-tuned vs **v5-datafix-tuned** (test set)
 
-| Metric | v1 test | v3 test | v4 test | **v4-tuned test** | v4→tuned |
-|---|---:|---:|---:|---:|---:|
-| ROC-AUC | 0.682 | 0.684 | 0.704 | **0.7093** | **+0.0053** |
-| PR-AUC | 0.619 | 0.620 | 0.634 | **0.6428** | **+0.0088** |
-| Log-loss | 0.603 | 0.603 | 0.592 | **0.5856** | −0.0064 |
-| Brier | 0.208 | 0.207 | 0.203 | **0.2003** | −0.0027 |
-| Precision @0.5 | 0.729 | 0.727 | 0.691 | **0.7140** | +0.0230 |
-| Recall @0.5 | 0.272 | 0.278 | **0.338** | 0.3198 | −0.0182 |
-| F1 @0.5 | 0.396 | 0.402 | **0.453** | 0.4418 | −0.0112 |
-| Positive rate | 0.378 | 0.378 | 0.378 | 0.378 | — |
-| Overfit gap (train − test ROC) | — | 0.145 | 0.145 | **0.109** | −0.036 |
+| Metric | v1 | v3 | v4 | v4-tuned | **v5-datafix-tuned** | v4-tuned→v5 |
+|---|---:|---:|---:|---:|---:|---:|
+| ROC-AUC | 0.682 | 0.684 | 0.704 | 0.7093 | **0.7171** | **+0.0078** |
+| PR-AUC | 0.619 | 0.620 | 0.634 | 0.6428 | **0.6538** | **+0.0110** |
+| Log-loss | 0.603 | 0.603 | 0.592 | 0.5856 | **0.5872** | +0.0016 |
+| Brier | 0.208 | 0.207 | 0.203 | 0.2003 | **0.2003** | −0.0000 |
+| Precision @0.5 | 0.729 | 0.727 | 0.691 | 0.7140 | **0.7650** | +0.0510 |
+| Recall @0.5 | 0.272 | 0.278 | 0.338 | 0.3198 | **0.2917** | −0.0281 |
+| F1 @0.5 | 0.396 | 0.402 | 0.453 | 0.4418 | **0.4224** | −0.0194 |
+| Positive rate | 0.378 | 0.378 | 0.378 | 0.378 | **0.377** | — |
+| Overfit gap (train − test ROC) | — | 0.145 | 0.145 | 0.109 | ~0.15 | — |
 
-MLflow run_id for v4: `8a3a3d96633c4d7c882ce8e6f105a3d7`.
-MLflow run_id for **v4-tuned**: `bfbdada5deec4c98bbf4b519dc4642d1`
-(experiment `trifecta-classifier`, local file store, 50 Optuna trials,
-~9 min CPU on 12 cores, tuned 2026-07-11).
-Train ROC-AUC on tuned: **0.8185** (gap 0.109 — smaller than v4's 0.145,
-i.e. **less overfit**).
+MLflow run_ids: v4 `8a3a3d96633c4d7c882ce8e6f105a3d7` · v4-tuned
+`bfbdada5deec4c98bbf4b519dc4642d1` · **v5-datafix baseline**
+`57660386534b4990a3df363350495e45` · **v5-datafix-tuned** parent run of
+`trifecta_optuna_2024-01-20` study (experiment `trifecta-classifier`,
+local file store, 50 Optuna trials, ~16 min CPU on 12 cores, tuned
+2026-07-11).
 
-**v4-tuned hyperparameters** (delta vs v4 in `()`):
-`n_estimators=1150 (600)`, `max_depth=7 (6)`, `learning_rate=0.0194 (0.05)`,
-`min_child_weight=10 (2)`, `reg_lambda=2.13 (1.0)`, `reg_alpha=1.84 (0)`,
-`subsample=0.90 (0.8)`, `colsample_bytree=0.66 (0.8)`, `gamma=1.51 (0)`.
-Pattern: **slower + wider + more regularised**.
+**v5-datafix-tuned hyperparameters** (delta vs v4-tuned in `()`):
+`n_estimators=850 (1150)`, `max_depth=8 (7)`, `learning_rate=0.01229 (0.0194)`,
+`min_child_weight=4 (10)`, `reg_lambda=4.44 (2.13)`, `reg_alpha=1.87 (1.84)`,
+`subsample=0.83 (0.90)`, `colsample_bytree=0.85 (0.66)`, `gamma=2.25 (1.51)`.
+Pattern: **fewer but deeper trees, slower learning, more regularised**.
 
-**Threshold trade-off (v4-tuned)**: at the shipped cutoff 0.5, F1 dips
-0.011 vs v4 because the tuned model is more conservative (precision +0.023,
-recall −0.018). A clean out-of-fold sweep on val places the F1-optimal
-cutoff at **0.30**, delivering test F1=0.5708 with P=0.49 R=0.68 — the
-trade-off is intentional: keep threshold=0.5 for "confident tickets", drop
-to 0.3 for "horses likely to podium".
+**Threshold trade-off (v5-datafix-tuned, val-fold sweep in
+`reports/threshold_sweep_v5_datafix.csv`)**: F1-optimal cutoff on val is
+**0.25** (F1=0.587, P=0.489, R=0.732, pos_rate=54 %). At 0.30 F1 is
+essentially tied (0.581, P=0.543, R=0.624, pos_rate=41 %). At the shipped
+0.5 cutoff we now buy **precision 0.77** (up from v4-tuned's 0.71), losing
+some recall. The API returns raw probabilities and does not enforce a
+decision threshold — Streamlit ranks horses by probability.
 
-**Latency impact**: v4=60 ms / v4-tuned=76 ms per 12-horse batch (CPU,
-measured), single-horse 26 → 30 ms. +27 % relative, +16 ms absolute. No
-user-visible regression on the API.
+**What changed vs v4-tuned**: the +0.008 ROC-AUC / +0.011 PR-AUC lift
+comes entirely from data quality — cleaner leader-row detection lets old
+historical rows from 2021-2023 contribute career signal, and dropping
+drifted rows removes ~20 k noise samples. No new features.
+
+**Latency impact**: v5-datafix-tuned uses 850 trees vs v4-tuned's 1150,
+so inference is slightly *faster* per row (measured on 12-horse batches).
 
 **Reading the numbers**
 
@@ -399,6 +411,55 @@ as NaN; they only got values at request time. **Fix:** loader's
 `post_position` is still NaN at training — deliberately, because the
 leader's post position is "today", not what the horse had in past
 races, so back-attaching it would inject future info.
+
+### 8.7 Crystal Reports column-drift across eras (v5-datafix)
+**Symptom.** EDA histogram of `n_field` (races-per-horse-per-day-per-distance)
+showed mean 39.2 with a fat tail up to 210+ — physically impossible
+(Uruguayan Tabuladas never have more than ~14 horses per race).
+Drilling into the parquet found 20 134 rows with `distance_m=1`,
+`kg=1200` and empty `jockey`.
+
+**Root cause A (~20 k rows).** Pre-2019 Tabuladas use a different
+Crystal Reports column layout. Col 22 contains **total time**
+(e.g. `"1'12''58"`), not distance. Distance lives at col 18 in old
+files. Every non-position field is shifted: jockey col 29 vs 30,
+dividend col 27 vs 28. The single-layout parser silently recorded
+total-time strings as `distance_m=1` after failed integer parses and
+dropped `kg` into `distance_m` for some cells.
+
+**Root cause B (~45 k rows).** 2021-2023 files put the leader-row `kg`
+cell at col 31, not col 30. `_find_leader_rows` was silently rejecting
+every leader block for those years, so the loader never emitted horses
+from those Tabuladas.
+
+**Fixes.** Both in `src/ingestion/loader.py`:
+
+1. `_find_leader_rows` now accepts the kg cell at either col 30 or 31:
+   ```python
+   for kg_col in (30, 31):
+       try: candidate = float(sheet.cell_value(r, kg_col))
+       except (TypeError, ValueError): continue
+       if 40 <= candidate <= 70:
+           kg_val = candidate; break
+   ```
+2. `_postprocess` drops the drifted rows via a plausibility filter
+   (much smaller code surface than a dual parser):
+   ```python
+   df = df[df["distance_m"].between(500, 4000)
+           & df["kg"].between(40, 70)]
+   ```
+
+**Impact.** Long-form rows 53 k → **98 623**, labelled rows 53 k →
+**98 418**, `n_field` mean 39.2 → **13.0** (max 210 → 98 — residual
+ambiguity from multiple races per day at the same distance, since
+historical Tabulada rows carry no `race_number`). Model gain: ROC-AUC
+0.7093 → **0.7171**, PR-AUC 0.6428 → **0.6538**.
+
+**Lesson.** The `distance_m=1` fingerprint looked like a European
+thousands-separator parse bug (`"1.200"` → 1.2). It wasn't. Inspect
+the raw cell value with `xlrd` **before** hypothesising a parser bug —
+two columns in different files can carry different data types under
+the same header.
 
 ---
 

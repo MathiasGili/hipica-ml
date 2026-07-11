@@ -223,14 +223,15 @@ class RawTabuladaLoader:
 
             col 1 : '1'  '2'  ...
             col 4 : horse name
-            col 30: kg as float
-            col 36: jockey
+            col 30 or 31: kg as float  (Crystal Reports layout drifted
+                          between 2021 and 2023 — col 31 during that
+                          window, col 30 before and after).
+            col 36+: jockey
         """
         out: list[int] = []
         for r in range(sheet.nrows):
             v1 = sheet.cell_value(r, 1) if sheet.ncols > 1 else ""
             v4 = sheet.cell_value(r, 4) if sheet.ncols > 4 else ""
-            v30 = sheet.cell_value(r, 30) if sheet.ncols > 30 else ""
             if not isinstance(v4, str) or not v4.strip():
                 continue
             # col 1 should be a small integer (post position 1..20)
@@ -240,12 +241,20 @@ class RawTabuladaLoader:
                 continue
             if not 1 <= pos <= 25:
                 continue
-            # col 30 should be a numeric kg
-            try:
-                kg = float(v30)
-            except (TypeError, ValueError):
-                continue
-            if not 40 <= kg <= 70:
+            # kg is at col 30 in most eras and at col 31 in the
+            # 2021-2023 layout. Accept either.
+            kg_val = None
+            for kg_col in (30, 31):
+                if sheet.ncols <= kg_col:
+                    continue
+                try:
+                    candidate = float(sheet.cell_value(r, kg_col))
+                except (TypeError, ValueError):
+                    continue
+                if 40 <= candidate <= 70:
+                    kg_val = candidate
+                    break
+            if kg_val is None:
                 continue
             out.append(r)
         return out
@@ -385,6 +394,17 @@ class RawTabuladaLoader:
             subset=["horse_name", "race_date", "racetrack_id", "distance_m"],
             keep="first",
         )
+        # Drop rows whose numeric fields fall outside physical plausibility.
+        # These are the fingerprint of the pre-2019 Crystal Reports layout,
+        # where a different column offset was used for every field past
+        # column 12 (distance was at col 18 instead of 22, jockey at 29
+        # instead of 30, etc.). Rather than maintain two parsers we drop
+        # the corrupted slice (~20 k rows, all from 2013-2018); the horses
+        # that only ran in that era are retired and add no signal.
+        df = df[
+            df["distance_m"].between(500, 4000, inclusive="both")
+            & df["kg"].between(40, 70, inclusive="both")
+        ]
         df["race_date"] = pd.to_datetime(df["race_date"])
         return df.reset_index(drop=True)
 

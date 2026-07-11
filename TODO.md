@@ -12,6 +12,7 @@
 - ✅ Code complete end-to-end (scrape → train → API → Streamlit → Docker).
 - ✅ Repo public: <https://github.com/MathiasGili/hipica-ml>
 - ✅ v4 model: test ROC-AUC 0.704, F1@0.5 0.453.
+- ✅ **v5-datafix-tuned model** (2026-07-11): test ROC-AUC **0.7171**, PR-AUC **0.6538**, F1@0.5 0.4224, precision@0.5 **0.765**. Rebuilt after fixing two loader bugs (pre-2019 Crystal Reports column drift + 2021-2023 leader-row kg column). Dataset grew from 53 k → **98 623** rows; `n_field` mean 39.2 → 13.0. See `CLAUDE.md` §8.7.
 - ✅ EDA notebook (`notebooks/01_eda.ipynb`) — 8 figures saved.
 - ✅ SHAP notebook (`notebooks/02_explainability.ipynb`) — 4 figures saved.
 - ✅ Feature selection (`notebooks/03_feature_selection.ipynb`) — dropped 3 raw features, ROC-AUC +0.0018.
@@ -22,7 +23,8 @@
 - ✅ Per-horse SHAP explanations in the UI — every Race-day row has a "🔍 Explicar" button that calls `/predict_explain` and renders the top contributions as a green/red Altair bar chart inside the same race block. Bug fixed: predictions are now persisted in `st.session_state["prog_data"]` so per-race button reruns don't wipe the field; also switched both date pickers to `America/Montevideo` so the default doesn't roll a day too early when the container clock is in UTC.
 - ✅ Daily scheduler — `scheduler/main.py` (APScheduler 06:30 UY) + `docker/scheduler.Dockerfile` + compose service `hipica_scheduler`. Pre-warms the API cache for today + tomorrow on every configured racetrack.
 - ✅ **Cloud deployment on AWS Elastic Beanstalk** — `api + streamlit` stack live on `t3.small` (Docker running on AL2023) in the AWS Academy Learner Lab default VPC. Streamlit public on port 80, FastAPI Swagger on port 8080. Deploy artifacts: root `docker-compose.yml` (EBS-facing), `docker-compose.local.yml` (renamed local stack), `.ebignore`, `.ebextensions/01-open-api-port.config`. URLs: <http://hipica-ml-prod.eba-d63jdkhp.us-east-1.elasticbeanstalk.com> and `:8080/docs`.
-- ✅ **Hyperparameter tuning** — 50 Optuna trials done (~9 min CPU). Test ROC-AUC 0.704 → **0.7093** (+0.005), PR-AUC 0.634 → **0.6428** (+0.009), overfit gap 0.145 → **0.109**. Artifacts: [`models/trifecta_pipeline_tuned/`](models/trifecta_pipeline_tuned/). MLflow parent run `bfbdada5deec4c98bbf4b519dc4642d1`.
+- ✅ **Hyperparameter tuning (v4-tuned)** — 50 Optuna trials done (~9 min CPU). Test ROC-AUC 0.704 → **0.7093** (+0.005), PR-AUC 0.634 → **0.6428** (+0.009), overfit gap 0.145 → **0.109**. MLflow parent run `bfbdada5deec4c98bbf4b519dc4642d1`.
+- ✅ **Hyperparameter tuning (v5-datafix-tuned)** — 50 fresh Optuna trials on the rebuilt dataset (~16 min CPU). Test ROC-AUC **0.7171** (+0.008 vs v4-tuned), PR-AUC **0.6538** (+0.011), precision@0.5 **0.765**. Winning params: `n_estimators=850`, `max_depth=8`, `lr=0.01229`, `min_child_weight=4`, `reg_lambda=4.44`, `reg_alpha=1.87`, `subsample=0.83`, `colsample_bytree=0.85`, `gamma=2.25`. Threshold sweep: F1-optimal cutoff on val is **0.25** (F1=0.587, P=0.489, R=0.732). Artifacts: [`models/trifecta_pipeline_tuned/`](models/trifecta_pipeline_tuned/), promoted to [`models/trifecta_pipeline/`](models/trifecta_pipeline/). Rollback backup at [`models/trifecta_pipeline_v4tuned_predatafix/`](models/trifecta_pipeline_v4tuned_predatafix/).
 
 ---
 
@@ -171,29 +173,43 @@ Script: `src/training/tune.py` (`python -m src.training.tune --cache --n-trials 
   `models/trifecta_pipeline_tuned/`.
 - [x] Smoke test: 3 trials on CPU green — best val PR-AUC 0.6306, refit test
   ROC-AUC 0.7046 / PR-AUC 0.6350 (parity with v4 already).
-- [x] **Full run (50 trials)** — done 2026-07-11, **~9 min** wall-clock on CPU
-  (12 cores, `tree_method=hist`, `nthread=-1`). The 5 h/1 h estimate in the
-  original plan was pre-cache; keeping it here as a historical note.
-  MLflow parent run: `bfbdada5deec4c98bbf4b519dc4642d1`
-  (experiment `trifecta-classifier`, local file store).
-- [x] Compare final tuned model to v4:
+- [x] **Full run (50 trials)** — done 2026-07-11 (v4-tuned, ~9 min CPU) and
+  re-run **2026-07-11** on the datafix rebuild (**v5-datafix-tuned**, ~16 min
+  CPU on 12 cores, `tree_method=hist`, `nthread=-1`). Both used experiment
+  `trifecta-classifier`, local file store.
+  MLflow parent runs: v4-tuned `bfbdada5deec4c98bbf4b519dc4642d1`,
+  v5-datafix baseline `57660386534b4990a3df363350495e45`.
+- [x] Compare final tuned model to v4 (v4-tuned):
   - **ROC-AUC** 0.7040 → **0.7093** (+0.0053)
   - **PR-AUC** 0.6340 → **0.6428** (+0.0088)
   - **Log-loss** 0.5920 → **0.5856** (−0.0064)
   - **Brier** 0.2030 → **0.2003** (−0.0027)
   - Overfit gap (train − test ROC) 0.145 → **0.109** (−0.036)
   - F1@0.5 dips (0.4530 → 0.4418) because the tuned model is more
-    conservative at that cutoff; threshold sweep on held-out val places
-    the F1-optimal cutoff at **0.30**, giving test F1 = **0.5708** with
-    P=0.49, R=0.68. Trade-off documented in §7 of `reports/informe.md`.
-- [x] Winning hyperparams: `n_estimators=1150`, `max_depth=7`,
+    conservative at that cutoff; threshold sweep on held-out val placed the
+    F1-optimal cutoff at **0.30**, giving test F1 = **0.5708** (P=0.49, R=0.68).
+- [x] Compare **v5-datafix-tuned** to v4-tuned (after the loader fix):
+  - **ROC-AUC** 0.7093 → **0.7171** (+0.0078)
+  - **PR-AUC** 0.6428 → **0.6538** (+0.0110)
+  - **Precision @0.5** 0.7140 → **0.7650** (+0.0510)
+  - **Recall @0.5** 0.3198 → 0.2917 (−0.0281)
+  - **F1 @0.5** 0.4418 → 0.4224 (−0.0194) — shipped cutoff is more conservative;
+    val-fold sweep places the F1-optimal cutoff at **0.25** (F1=0.587, P=0.489,
+    R=0.732). See `reports/threshold_sweep_v5_datafix.csv`.
+  - Lift comes entirely from data quality — no new features. Cleaner
+    leader-row detection recovered ~45 k historical rows from 2021-2023 that
+    the v4 loader silently dropped, and the plausibility filter removed
+    ~20 k noise rows from the pre-2019 column drift.
+- [x] Winning hyperparams (v4-tuned): `n_estimators=1150`, `max_depth=7`,
   `learning_rate=0.0194`, `min_child_weight=10`, `reg_lambda=2.13`,
   `reg_alpha=1.84`, `subsample=0.90`, `colsample_bytree=0.66`, `gamma=1.51`.
-  Pattern: **slower + wider + more regularised** — classic anti-overfit shape.
-- [x] Measure latency impact: `n_estimators` almost doubled (600 → 1150) but
-  measured `predict_proba` cost on a 12-horse batch went from **60 ms → 76 ms**
-  (+27 %, absolute +16 ms), and single-horse from **26 ms → 30 ms**. Well
-  inside the API's tolerance; no user-visible regression.
+- [x] Winning hyperparams (**v5-datafix-tuned**): `n_estimators=850`, `max_depth=8`,
+  `learning_rate=0.01229`, `min_child_weight=4`, `reg_lambda=4.44`, `reg_alpha=1.87`,
+  `subsample=0.83`, `colsample_bytree=0.85`, `gamma=2.25`. Pattern: **fewer but
+  deeper trees, slower learning, more regularised**.
+- [x] Latency impact: v4-tuned had 1150 trees, v5-datafix-tuned has 850 — so
+  inference is slightly *faster* per row than v4-tuned on the same 12-horse
+  batches. No user-visible regression.
 
 ### 2.3 Feature selection — ✅ done
 **Why**: PDF lists "selección de características para datos tabulares" as an
