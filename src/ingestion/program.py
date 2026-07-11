@@ -46,8 +46,11 @@ logger = logging.getLogger(__name__)
 
 DOC_TYPE_PROGRAM: int = 1
 
-# Matches "1100 mts", "(2000mts)", "1.600 mt", "1100 m"
-_DIST_RE = re.compile(r"(\d{3,4})\s*mt", re.IGNORECASE)
+# Matches "1100 mts", "(2000mts)", "1.600 mt", "1100 m", and OCR variants
+# like "650 ms" or "650 m" (Tesseract often chops the trailing "ts" or "t").
+# Requiring only "m" after the digits keeps us robust while _VALID_DISTANCES
+# filters spurious hits.
+_DIST_RE = re.compile(r"(\d{3,4})\s*m", re.IGNORECASE)
 # Uruguayan flat racing runs from 500 m (Las Piedras sprints) up to ~3 km.
 _VALID_DISTANCES = range(500, 3001)
 
