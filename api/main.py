@@ -243,12 +243,27 @@ def predict_program(req: PredictProgramRequest) -> PredictProgramResponse:
     for race in races:
         if not race.entries:
             continue
+
+        # If OCR failed for this race, we don't know the distance. Refuse to
+        # silently substitute a default — that biases every prediction and
+        # gives the user no way to tell it happened. Ship the race with an
+        # explicit warning and no predictions.
+        if not race.distance_m:
+            out.append(ProgramRacePrediction(
+                race_index=race.race_index,
+                distance_m=None,
+                post_time=race.post_time,
+                predictions=[],
+                warning="distance_unknown",
+            ))
+            continue
+
         rows = [
             {
                 "horse_name": e.horse_name,
                 "race_date": pd.Timestamp(req.race_date),
                 "racetrack_id": req.racetrack_id,
-                "distance_m": race.distance_m or 1100,  # safe default if OCR failed
+                "distance_m": race.distance_m,
                 "kg": e.kg,
                 "post_position": e.post_position,
                 "horse_age": e.horse_age,

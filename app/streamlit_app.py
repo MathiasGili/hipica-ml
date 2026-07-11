@@ -209,8 +209,20 @@ with tab_program:
             header = f"Carrera {race['race_index']}"
             if race.get("post_time"):
                 header += f"  ·  {race['post_time']}"
-            header += f"  ·  {race['distance_m']} mts"
+            dist = race.get("distance_m")
+            if dist:
+                header += f"  ·  {dist} mts"
+            else:
+                header += "  ·  distancia desconocida"
             st.markdown(f"### {header}")
+
+            if race.get("warning") == "distance_unknown" or not race.get("predictions"):
+                st.warning(
+                    "No pudimos leer la distancia de esta carrera (OCR falló sobre el "
+                    "Programa). Sin distancia no generamos predicciones — sería sesgar "
+                    "el resultado con una distancia inventada."
+                )
+                continue
 
             df = pd.DataFrame(race["predictions"])
             df = df.sort_values("p_trifecta", ascending=False).reset_index(drop=True)
@@ -272,7 +284,7 @@ with tab_program:
                 race_payload = {
                     "race_date": data["race_date"],
                     "racetrack_id": int(data["racetrack_id"]),
-                    "distance_m": int(race["distance_m"] or 1100),
+                    "distance_m": int(race["distance_m"]),
                 }
                 try:
                     er = requests.post(

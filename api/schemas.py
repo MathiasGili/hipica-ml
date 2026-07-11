@@ -132,9 +132,16 @@ class ProgramHorsePrediction(BaseModel):
 
 class ProgramRacePrediction(BaseModel):
     race_index: int = Field(..., ge=1, description="1-based within the day")
-    distance_m: int
+    distance_m: int | None = Field(
+        default=None,
+        description="Race distance in metres. None when OCR could not read the badge.",
+    )
     post_time: str | None = None
     predictions: list[ProgramHorsePrediction]
+    warning: str | None = Field(
+        default=None,
+        description="Set when this race could not be predicted (e.g. 'distance_unknown').",
+    )
 
 
 class PredictProgramResponse(BaseModel):
