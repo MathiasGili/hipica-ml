@@ -48,7 +48,8 @@ DOC_TYPE_PROGRAM: int = 1
 
 # Matches "1100 mts", "(2000mts)", "1.600 mt", "1100 m"
 _DIST_RE = re.compile(r"(\d{3,4})\s*mt", re.IGNORECASE)
-_VALID_DISTANCES = range(800, 3001)
+# Uruguayan flat racing runs from 500 m (Las Piedras sprints) up to ~3 km.
+_VALID_DISTANCES = range(500, 3001)
 
 # OOXML namespaces
 _NS_XDR = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
@@ -218,9 +219,12 @@ def _extract_distances(xlsx_path: Path, dump_dir: Path) -> list[int | None]:
             if path is None:
                 continue
             w, h = Image.open(path).size
-            # Distance badges in current Maroñas Programa template are ~972x520.
-            # Anything smaller is a chaquetilla (jockey colours) or the track logo.
-            if w >= 800 and h >= 400:
+            # Distance badges in the Maroñas Programa template are ~972x520.
+            # Anything smaller is a chaquetilla (jockey colours). Anything much
+            # larger (e.g. 1917x1428) is the track-outline diagram that Las
+            # Piedras / Melo Programas embed alongside the badge — admitting it
+            # doubles the badge count per race and misaligns every distance.
+            if 800 <= w <= 1100 and 400 <= h <= 600:
                 badges.append((row, path))
 
     badges.sort(key=lambda pair: pair[0])
