@@ -22,12 +22,15 @@ construyó sobre ~13 años de historia pública scrapeada del back-end de
 `hipica.maronas.com.uy` (98 398 filas, 8 610 caballos, 1 301 documentos
 "Tabulada").
 
-La versión final del modelo (v4, XGBoost histograma) alcanza
-**ROC-AUC = 0.704**, **PR-AUC = 0.634** y **F1@0.5 = 0.453** en un
+La versión final del modelo (**v4-tuned**, XGBoost histograma con
+hiperparámetros optimizados por Optuna en 50 trials) alcanza
+**ROC-AUC = 0.7093**, **PR-AUC = 0.6428** y **log-loss = 0.5856** en un
 test set temporal con corte en 2024-04-14 (n_test = 16 605, tasa
-positiva 37.8 %). La precisión del modelo a umbral 0.5 (0.691) es
-**1.83×** la tasa base, lo que lo hace utilizable como filtro en una
-estrategia de apuesta.
+positiva 37.8 %). El **gap train\u2013test de ROC-AUC** cae de 0.145 (v4
+base) a **0.109** (v4-tuned) — menor overfitting. A umbral 0.5 la
+precisión es **0.714** (**1.89×** la tasa base), utilizable como
+filtro precision-first; barriendo el threshold a 0.30 se maximiza F1
+en **0.5708** con recall 0.68 para el caso recall-first (\u00a77).
 
 La entrega cumple los electivos exigidos (mínimo 3) con siete:
 **(1)** scraper completo con tenacity y manejo de BOM,
@@ -254,27 +257,37 @@ están explícitamente deshabilitados en `src/training/split.py`.
 
 ---
 
-## 7. Resultados — progresión v1 → v4
+## 7. Resultados — progresión v1 → v4 → v4-tuned
 
 Todas las métricas en el mismo test set temporal (cutoff 2024-04-14,
 n_test = 16 605, tasa positiva 37.8 %).
 
-| Métrica | v1 | v3 | **v4** | Δ v1 → v4 |
-|---|---:|---:|---:|---:|
-| ROC-AUC (test) | 0.682 | 0.684 | **0.704** | **+0.022** |
-| PR-AUC (test) | 0.619 | 0.620 | **0.634** | +0.015 |
-| Log-loss (test) | 0.603 | 0.603 | **0.592** | −0.011 |
-| Brier (test) | 0.208 | 0.207 | **0.203** | −0.005 |
-| Precision @0.5 | 0.729 | 0.727 | 0.691 | −0.038 |
-| Recall @0.5 | 0.272 | 0.278 | **0.338** | +0.066 |
-| F1 @0.5 | 0.396 | 0.402 | **0.453** | +0.057 |
+| Métrica | v1 | v3 | v4 | **v4-tuned** | Δ v1 → tuned |
+|---|---:|---:|---:|---:|---:|
+| ROC-AUC (test) | 0.682 | 0.684 | 0.704 | **0.7093** | **+0.027** |
+| PR-AUC (test) | 0.619 | 0.620 | 0.634 | **0.6428** | +0.024 |
+| Log-loss (test) | 0.603 | 0.603 | 0.592 | **0.5856** | −0.017 |
+| Brier (test) | 0.208 | 0.207 | 0.203 | **0.2003** | −0.008 |
+| Precision @0.5 | 0.729 | 0.727 | 0.691 | **0.7140** | −0.015 |
+| Recall @0.5 | 0.272 | 0.278 | **0.338** | 0.3198 | +0.048 |
+| F1 @0.5 | 0.396 | 0.402 | **0.453** | 0.4418 | +0.046 |
+| Overfit gap (train − test ROC) | — | 0.145 | 0.145 | **0.109** | −0.036 |
 
-**Lectura.** ROC-AUC pasó de 0.682 a **0.704** sumando información
-genuinamente nueva: dividend (mercado), jockey cross-horse y métricas
-de fit. La precisión cae 0.04 a umbral 0.5 porque el recall sube
-0.07 — si se mantiene el operating point en precision = 0.73 (subiendo
-el threshold a ~0.55), el recall del v4 sigue siendo mayor que el del
-v3.
+**Lectura.** v1 → v4 sumó información genuinamente nueva (dividend,
+jockey cross-horse, fit de distancia) y llevó ROC-AUC de 0.682 a 0.704.
+Optuna sobre v4 (50 trials, ~9 min CPU — detalle en §13) empuja
+ROC-AUC otros +0.005 hasta **0.7093**, con PR-AUC +0.009 y log-loss
+−0.006. Lo más importante: el **gap train–test de ROC-AUC cae de
+0.145 a 0.109**, es decir el modelo tuned overfittea menos.
+
+**Trade-off F1@0.5.** El F1 baja 0.011 respecto a v4 porque el modelo
+tuned es más conservador a threshold 0.5 (precision sube +0.023,
+recall baja −0.018). Un barrido de threshold sobre `val` (out-of-fold
+limpio, sin leakage) coloca el óptimo de F1 en **threshold = 0.30**,
+donde el test entrega **F1 = 0.5708, P = 0.49, R = 0.68**. Este
+intercambio es intencional y queda documentado como parámetro de
+deployment: threshold 0.5 para *"apuestas confiables"* (precision-first),
+threshold 0.3 para *"caballos probablemente en el podio"* (recall-first).
 
 Una versión **v2** (no listada) intentó agregar 5 features adicionales
 sin información ortogonal y movió las métricas en ±0.001. Esto
@@ -632,10 +645,58 @@ en test: ROC-AUC **0.7046**, PR-AUC 0.6350 — ya en paridad con v4 con
 sólo 3 trials, lo que sugiere que el modelo actual está cerca del
 óptimo del espacio de búsqueda.
 
-> **Nota de entrega.** El run completo de 50 trials (~5 h CPU,
-> ~1 h GPU) está pendiente al cierre del informe. El script está
-> listo y reproducible:
-> `python -m src.training.tune --cache --device cuda --n-trials 50`.
+### 13.1 Run completo (50 trials)
+
+Ejecutado el 2026-07-11 en CPU (12 cores, `tree_method=hist`,
+`nthread=-1`). Tiempo de reloj: **~9 minutos totales** (~5 s por trial,
+más ~3 min de refit final sobre el train completo). La estimación
+original de 5 h CPU / 1 h GPU era pesimista y anterior al caché de
+parquet.
+
+**Mejor trial (#48).** Val PR-AUC = **0.6350**. Hiperparámetros
+ganadores (delta vs v4 entre paréntesis):
+
+| Parámetro | v4 | **v4-tuned** | Delta |
+|---|---:|---:|---|
+| `n_estimators` | 600 | **1150** | +91 % — más árboles |
+| `max_depth` | 6 | **7** | +1 nivel |
+| `learning_rate` | 0.05 | **0.0194** | −61 % — mucho más lento |
+| `min_child_weight` | 2 | **10** | 5× — splits más cautos |
+| `reg_lambda` (L2) | 1.0 | **2.13** | 2× |
+| `reg_alpha` (L1) | 0 | **1.84** | introducido — sparsity |
+| `subsample` | 0.8 | **0.90** | +0.10 |
+| `colsample_bytree` | 0.8 | **0.66** | −0.14 — más feature bagging |
+| `gamma` | 0 | **1.51** | introducido — min loss reduction |
+
+**Patrón.** Optuna eligió un ensamble **más lento, más ancho y más
+regularizado** — la forma clásica anti-overfit. La caída del gap
+train–test de 0.145 a 0.109 confirma que el efecto es real.
+
+**Métricas finales en `test` (refit sobre `train` completo,
+n_test = 16 605).** ROC-AUC **0.7093** (+0.005), PR-AUC **0.6428**
+(+0.009), Log-loss **0.5856** (−0.006), Brier **0.2003** (−0.003).
+Cf. §7.
+
+**Latencia medida.** `predict_proba` sobre un batch de 12 caballos
+pasa de **60 ms (v4)** a **76 ms (v4-tuned)** en CPU (`n_estimators`
+casi duplicado, pero `hist` paraleliza bien). Single-horse:
+26 ms → 30 ms. **+27 % relativo / +16 ms absoluto** — dentro del
+presupuesto de la API.
+
+**Trazabilidad.** Parent MLflow run
+`bfbdada5deec4c98bbf4b519dc4642d1` (experiment `trifecta-classifier`)
+tiene los 50 trials como child runs, `best_val_pr_auc`, `best__*` y
+las métricas de `test`. Artifacts:
+[`models/trifecta_pipeline_tuned/estimator.joblib`](../models/trifecta_pipeline_tuned/estimator.joblib)
+(4.0 MB) y
+[`models/trifecta_pipeline_tuned/feature_pipeline.joblib`](../models/trifecta_pipeline_tuned/feature_pipeline.joblib)
+(32 MB). El modelo v4 original sigue en
+[`models/trifecta_pipeline/`](../models/trifecta_pipeline/), lo que
+permite A/B directo.
+
+> **Reproducción.**
+> `python -m src.training.tune --cache --device cpu --n-trials 50`
+> (o `--device cuda` en una máquina con GPU).
 
 ---
 

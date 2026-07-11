@@ -21,64 +21,92 @@
 - ✅ Live race-day predictions — `src/ingestion/program.py` (Programa scrape + Tesseract OCR of distance badges) + `POST /predict_program` endpoint + Streamlit "🗓️ Race day" tab. End-to-end verified on 2026-06-19 (9 races, OCR 9/9 correct).
 - ✅ Per-horse SHAP explanations in the UI — every Race-day row has a "🔍 Explicar" button that calls `/predict_explain` and renders the top contributions as a green/red Altair bar chart inside the same race block. Bug fixed: predictions are now persisted in `st.session_state["prog_data"]` so per-race button reruns don't wipe the field; also switched both date pickers to `America/Montevideo` so the default doesn't roll a day too early when the container clock is in UTC.
 - ✅ Daily scheduler — `scheduler/main.py` (APScheduler 06:30 UY) + `docker/scheduler.Dockerfile` + compose service `hipica_scheduler`. Pre-warms the API cache for today + tomorrow on every configured racetrack.
-- 🟡 Hyperparameter tuning — script ready (`src/training/tune.py`), 3-trial smoke test green; full 50-trial run pending.
+- ✅ **Cloud deployment on AWS Elastic Beanstalk** — `api + streamlit` stack live on `t3.small` (Docker running on AL2023) in the AWS Academy Learner Lab default VPC. Streamlit public on port 80, FastAPI Swagger on port 8080. Deploy artifacts: root `docker-compose.yml` (EBS-facing), `docker-compose.local.yml` (renamed local stack), `.ebignore`, `.ebextensions/01-open-api-port.config`. URLs: <http://hipica-ml-prod.eba-d63jdkhp.us-east-1.elasticbeanstalk.com> and `:8080/docs`.
+- ✅ **Hyperparameter tuning** — 50 Optuna trials done (~9 min CPU). Test ROC-AUC 0.704 → **0.7093** (+0.005), PR-AUC 0.634 → **0.6428** (+0.009), overfit gap 0.145 → **0.109**. Artifacts: [`models/trifecta_pipeline_tuned/`](models/trifecta_pipeline_tuned/). MLflow parent run `bfbdada5deec4c98bbf4b519dc4642d1`.
 
 ---
 
 ## 1. Mandatory — still missing
 
-### 1.1 EDA notebook
+### 1.1 EDA notebook — ✅ done
 **Why**: The PDF explicitly requires `Análisis Exploratorio de los Datos` and
 the rubric grades on it ("Análisis Exploratorio y Preparación de los datos").
 
-**Where**: create `notebooks/01_eda.ipynb`.
+**Where**: [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb) (647 KB,
+executed end-to-end) and 8 PNGs under [`reports/figures/`](reports/figures/).
 
 **Content checklist**:
-- [ ] Load `data/processed/history.parquet` (98 398 rows).
-- [ ] Dataset shape, date range, missingness per column.
-- [ ] Label balance (`in_trifecta` ≈ 35.76 % positive).
-- [ ] Distribution of `kg`, `distance_m`, `n_field`, `horse_age`.
-- [ ] Top racetracks, top jockeys, top trainers by row count.
-- [ ] Career-runs distribution per horse (long tail).
-- [ ] Correlation heatmap of numeric features.
-- [ ] Time series: races per year, label rate per year (drift check).
-- [ ] Class balance per racetrack and per distance bucket.
-- [ ] Save 3-5 plots into `reports/figures/` for inclusion in the report.
+- [x] Load `data/processed/history.parquet` (98 398 rows).
+- [x] Dataset shape, date range, missingness per column
+  → [01_missingness.png](reports/figures/01_missingness.png).
+- [x] Label balance (`in_trifecta` ≈ 35.76 % positive)
+  → [02_label_balance.png](reports/figures/02_label_balance.png).
+- [x] Distribution of `kg`, `distance_m`, `n_field`, `horse_age`
+  → [03_numeric_distributions.png](reports/figures/03_numeric_distributions.png).
+- [x] Top racetracks, top jockeys, top trainers by row count
+  → [04_top_tracks_jockeys.png](reports/figures/04_top_tracks_jockeys.png).
+- [x] Career-runs distribution per horse (long tail)
+  → [05_runs_per_horse.png](reports/figures/05_runs_per_horse.png).
+- [x] Correlation heatmap of numeric features
+  → [07_correlation.png](reports/figures/07_correlation.png).
+- [x] Time series: races per year, label rate per year (drift check)
+  → [06_temporal_trends.png](reports/figures/06_temporal_trends.png).
+- [x] Class balance per racetrack and per distance bucket
+  → [08_balance_by_segment.png](reports/figures/08_balance_by_segment.png).
+- [x] 8 plots saved to `reports/figures/` and embedded in the report.
 
-### 1.2 Written report (`informe.pdf`)
+### 1.2 Written report (`informe.pdf`) — ✅ done
 **Why**: Section "Entrega" of the PDF — "incluye un informe en conjunto con el
-código base". Without the report the submission is incomplete.
+código base".
 
-**Suggested structure**:
-1. Portada — name, group, date, link to repo.
-2. Resumen ejecutivo (½ page).
-3. Definición del problema y target (`in_trifecta`).
-4. Dataset y EDA — figures from the notebook.
-5. Arquitectura del sistema — copy the diagram from `CLAUDE.md` §3.
-6. Feature engineering — the 35-feature contract, anti-leakage strategy.
-7. Modelo y entrenamiento — XGBoost choice, temporal split, MLflow tracking.
-8. Resultados — v1 → v4 progression table from `CLAUDE.md` §2.
-9. Anti-skew y anti-leakage — single shared FE pipeline + tests.
-10. API — endpoints, Pydantic validation, examples.
-11. Despliegue — `docker-compose.yml`, services, ports.
-12. Trazabilidad — MLflow runs, model registry, joblib fallback.
-13. Explicabilidad — SHAP values (after §2.1).
-14. Optimización — Optuna tuning + feature selection (after §2.2 and §2.3).
-15. Streamlit UI — screenshot.
-16. Trade-offs y mejoras posibles — what we'd do next.
-17. Uso de IA generativa — declare GitHub Copilot / Claude (the PDF requires
-    explicit citation).
-18. Anexo: comandos para reproducir, links a runs de MLflow.
+**Where**: [`reports/informe.md`](reports/informe.md) (37 KB, 19 sections)
+rendered to [`reports/informe.pdf`](reports/informe.pdf) (1.77 MB) via
+WeasyPrint using the CSS embedded in [`reports/informe.html`](reports/informe.html).
 
-**Format**: PDF, ≤ 40 MB total (zip with code + report).
+**Sections shipped**:
+1. Portada + resumen ejecutivo.
+2. Definición del problema y target (`in_trifecta`).
+3. Dataset y EDA — embeds the 8 figures from §1.1.
+4. Arquitectura del sistema (con diagrama).
+5. Feature engineering — contrato de 35 features + anti-leakage.
+6. Modelo y entrenamiento — XGBoost, split temporal, MLflow.
+7. Resultados — progresión v1 → v4 (+0.022 ROC-AUC, +0.057 F1).
+8. API — endpoints, Pydantic, ejemplos.
+9. Despliegue — **§9.1 Local (Docker Compose)** + **§9.2 Nube (AWS EBS)**.
+10. Trazabilidad — MLflow + DVC + joblib fallback.
+11. Explicabilidad — SHAP top-5 + waterfall.
+12. Selección de features (aggressive pass +0.0018 ROC-AUC).
+13. Optuna — smoke 3 trials en paridad con v4.
+14. UI Streamlit + Race-day tab con OCR.
+15. Tests y CI (7/7 passing).
+16. Bugs encontrados — incluye §16.7 sobre el episodio LibreOffice en EBS.
+17. Trade-offs y mejoras posibles.
+18. Uso de IA generativa (declaración GitHub Copilot / Claude).
+19. Anexo — comandos de reproducción.
 
-### 1.3 Deployment platform
-The PDF says **AWS is recommended, not required** — *"Si ya están familiarizados
-con otras plataformas... pueden optar por usarlas"*. Local Docker Compose
-counts. We will keep this as-is and document the deployment story in the report.
+**Format**: PDF, 1.77 MB. Well under the 40 MB submission cap.
 
-If we want extra points: deploy the API to a free tier (Render, Fly.io, AWS
-EC2 t3.micro). Optional.
+### 1.3 Deployment platform — ✅ done
+The PDF says **AWS is recommended, not required**. We went the recommended
+route and shipped the `api + streamlit` stack to **AWS Elastic Beanstalk**
+(Docker on AL2023) inside the AWS Academy Learner Lab, following the
+instructor's `Ejemplo de despliegue EBS.pdf`.
+
+- [x] `docker-compose.yml` at the repo root, only `api` (internal) + `streamlit`
+  (host port 80). `docker-compose.local.yml` keeps the full 5-service dev stack.
+- [x] `.ebignore` — excludes `data/raw/` (1.3 GB), `notebooks/`, `mlruns/`,
+  PDFs. Final deploy bundle ≈ 35 MB.
+- [x] `.ebextensions/01-open-api-port.config` — opens TCP 8080 on the
+  EBS-managed security group so `/docs` is publicly reachable.
+- [x] Env created with the Learner Lab-friendly flags:
+  `--instance_type t3.small --single --instance_profile LabInstanceProfile
+  --service-role LabRole --vpc.id <default-VPC> --vpc.ec2subnets <3 public subnets>
+  --vpc.publicip`.
+- [x] End-to-end verified: `/health`, `/predict_online`, `/predict_batch`
+  respond < 1 s from the public URL. `/predict_program` works after restoring
+  `libreoffice-calc` in `docker/api.Dockerfile` (regression from image-slim pass).
+- [x] Documented as `§9.2 Nube — AWS Elastic Beanstalk` in `reports/informe.md`
+  and PDF regenerated.
 
 ---
 
@@ -86,6 +114,11 @@ EC2 t3.micro). Optional.
 
 The minimum is 3 electives. We already have 3 done (scraper, ML traceability
 partial, Streamlit). Adding 2-3 more raises the grade.
+
+Final count at submission time: **7 electives done** — scraper,
+trazabilidad (MLflow + DVC), Streamlit UI, SHAP explainability,
+feature selection, Optuna (script ready + smoke), and **AWS Elastic
+Beanstalk cloud deployment**.
 
 ### 2.1 Explainability with SHAP — ✅ done
 **Cheap, high-visibility win.** Notebook `notebooks/02_explainability.ipynb`:
@@ -120,7 +153,7 @@ prediction. Optional.
 `post_position` is 100 % NaN at training (see `CLAUDE.md` §8.6); model never
 learns from it. Hard candidate to drop in feature selection.
 
-### 2.2 Hyperparameter tuning with Optuna — 🟡 in progress
+### 2.2 Hyperparameter tuning with Optuna — ✅ done
 **Why**: PDF lists "ajuste de hiperparámetros" as an explicit option, and the
 rubric asks to "evalúen su impacto en el rendimiento del modelo y sistema".
 
@@ -138,9 +171,29 @@ Script: `src/training/tune.py` (`python -m src.training.tune --cache --n-trials 
   `models/trifecta_pipeline_tuned/`.
 - [x] Smoke test: 3 trials on CPU green — best val PR-AUC 0.6306, refit test
   ROC-AUC 0.7046 / PR-AUC 0.6350 (parity with v4 already).
-- [ ] **Full run (50 trials)** — pending. CPU ≈ 5h, GPU ≈ 1h.
-- [ ] Compare final tuned model to v4 in the report.
-- [ ] Measure latency impact: `n_estimators` doubling roughly doubles inference time.
+- [x] **Full run (50 trials)** — done 2026-07-11, **~9 min** wall-clock on CPU
+  (12 cores, `tree_method=hist`, `nthread=-1`). The 5 h/1 h estimate in the
+  original plan was pre-cache; keeping it here as a historical note.
+  MLflow parent run: `bfbdada5deec4c98bbf4b519dc4642d1`
+  (experiment `trifecta-classifier`, local file store).
+- [x] Compare final tuned model to v4:
+  - **ROC-AUC** 0.7040 → **0.7093** (+0.0053)
+  - **PR-AUC** 0.6340 → **0.6428** (+0.0088)
+  - **Log-loss** 0.5920 → **0.5856** (−0.0064)
+  - **Brier** 0.2030 → **0.2003** (−0.0027)
+  - Overfit gap (train − test ROC) 0.145 → **0.109** (−0.036)
+  - F1@0.5 dips (0.4530 → 0.4418) because the tuned model is more
+    conservative at that cutoff; threshold sweep on held-out val places
+    the F1-optimal cutoff at **0.30**, giving test F1 = **0.5708** with
+    P=0.49, R=0.68. Trade-off documented in §7 of `reports/informe.md`.
+- [x] Winning hyperparams: `n_estimators=1150`, `max_depth=7`,
+  `learning_rate=0.0194`, `min_child_weight=10`, `reg_lambda=2.13`,
+  `reg_alpha=1.84`, `subsample=0.90`, `colsample_bytree=0.66`, `gamma=1.51`.
+  Pattern: **slower + wider + more regularised** — classic anti-overfit shape.
+- [x] Measure latency impact: `n_estimators` almost doubled (600 → 1150) but
+  measured `predict_proba` cost on a 12-horse batch went from **60 ms → 76 ms**
+  (+27 %, absolute +16 ms), and single-horse from **26 ms → 30 ms**. Well
+  inside the API's tolerance; no user-visible regression.
 
 ### 2.3 Feature selection — ✅ done
 **Why**: PDF lists "selección de características para datos tabulares" as an
@@ -254,6 +307,7 @@ These are **not** required by the rubric but raise the polish level:
   modelo `trifecta-classifier` v1 registrado y promovido a
   `Production` contra Postgres; API verificada via `/health`
   reportando `model_name=mlflow, model_version=1`.
+- [x] **AWS Elastic Beanstalk cloud deployment** — see §1.3.
 
 ---
 
@@ -284,18 +338,24 @@ These are **not** required by the rubric but raise the polish level:
   would not move the grade.
 - ❌ Quantization / pruning / distillation — not meaningful for XGBoost on
   tabular data.
-- ❌ AWS deployment — recommended but not required, and Docker Compose counts.
+- ~~AWS deployment~~ — done, see §1.3.
 
 ---
 
 ## 6. Submission checklist (the day before deadline)
 
-- [ ] All electives implemented ≥ 3 (we will have 5-6).
+- [x] All electives implemented ≥ 3 (we have **7**: scraper, trazabilidad,
+  Streamlit, SHAP, feature selection, Optuna, AWS EBS deployment).
 - [ ] `pytest` green.
-- [ ] README updated with how to reproduce every step.
-- [ ] `informe.pdf` finalised, uses Copilot/Claude declaration section.
+- [ ] README updated with how to reproduce every step, including the new
+  `docker compose -f docker-compose.local.yml up -d` for local dev and
+  `eb deploy` for the cloud path.
+- [x] `informe.pdf` finalised (19 sections, 1.77 MB), Copilot/Claude
+  declaration in §18.
 - [ ] Zip contains: `informe.pdf` + repo snapshot (no `data/raw/`, no
-  `mlruns/`, no `.venv/`).
+  `mlruns/`, no `.venv/`, no `.elasticbeanstalk/logs/`).
 - [ ] Total size ≤ 40 MB.
-- [ ] Repo is **public** OR ready to invite the docente if private.
+- [x] Repo is **public**: <https://github.com/MathiasGili/hipica-ml>.
+- [ ] `eb terminate hipica-ml-prod` after the docente grades the live URL, to
+  release the EC2 + EIP and preserve the 50 USD Academy budget.
 - [ ] Submitted on `gestion.ort.edu.uy` before 21:00 on 2026-07-15.

@@ -59,24 +59,43 @@ test_size=0.2, temporal split (random splits explicitly disabled).
   `jockey_career_show_rate`. The jockey features are the only ones that
   index across horses (every horse a jockey rode contributes).
 
-### v4 vs v3 vs v1 (test set, same cutoff and config)
+### v4 vs v3 vs v1 vs v4-tuned (test set, same cutoff and split)
 
-| Metric | v1 test | v3 test | **v4 test** | v1→v4 |
-|---|---:|---:|---:|---:|
-| ROC-AUC | 0.682 | 0.684 | **0.704** | **+0.022** |
-| PR-AUC | 0.619 | 0.620 | **0.634** | +0.015 |
-| Log-loss | 0.603 | 0.603 | **0.592** | −0.011 |
-| Brier | 0.208 | 0.207 | **0.203** | −0.005 |
-| Precision @0.5 | 0.729 | 0.727 | 0.691 | −0.038 |
-| Recall @0.5 | 0.272 | 0.278 | **0.338** | +0.066 |
-| F1 @0.5 | 0.396 | 0.402 | **0.453** | +0.057 |
-| Positive rate | 0.378 | 0.378 | 0.378 | — |
+| Metric | v1 test | v3 test | v4 test | **v4-tuned test** | v4→tuned |
+|---|---:|---:|---:|---:|---:|
+| ROC-AUC | 0.682 | 0.684 | 0.704 | **0.7093** | **+0.0053** |
+| PR-AUC | 0.619 | 0.620 | 0.634 | **0.6428** | **+0.0088** |
+| Log-loss | 0.603 | 0.603 | 0.592 | **0.5856** | −0.0064 |
+| Brier | 0.208 | 0.207 | 0.203 | **0.2003** | −0.0027 |
+| Precision @0.5 | 0.729 | 0.727 | 0.691 | **0.7140** | +0.0230 |
+| Recall @0.5 | 0.272 | 0.278 | **0.338** | 0.3198 | −0.0182 |
+| F1 @0.5 | 0.396 | 0.402 | **0.453** | 0.4418 | −0.0112 |
+| Positive rate | 0.378 | 0.378 | 0.378 | 0.378 | — |
+| Overfit gap (train − test ROC) | — | 0.145 | 0.145 | **0.109** | −0.036 |
 
-MLflow run_id for v4: `8a3a3d96633c4d7c882ce8e6f105a3d7` (re-trained 2026-06-13
-under pinned `scikit-learn>=1.7,<1.8`; previous `98d0a5cce6024f86aa69cfece693d9be`
-was pickled with sklearn 1.5 and would not unpickle on the current venv).
-Train ROC-AUC: 0.849 (gap to test: 0.145, basically unchanged from v3's
-0.145 — not new overfitting, just more signal extracted on both sides).
+MLflow run_id for v4: `8a3a3d96633c4d7c882ce8e6f105a3d7`.
+MLflow run_id for **v4-tuned**: `bfbdada5deec4c98bbf4b519dc4642d1`
+(experiment `trifecta-classifier`, local file store, 50 Optuna trials,
+~9 min CPU on 12 cores, tuned 2026-07-11).
+Train ROC-AUC on tuned: **0.8185** (gap 0.109 — smaller than v4's 0.145,
+i.e. **less overfit**).
+
+**v4-tuned hyperparameters** (delta vs v4 in `()`):
+`n_estimators=1150 (600)`, `max_depth=7 (6)`, `learning_rate=0.0194 (0.05)`,
+`min_child_weight=10 (2)`, `reg_lambda=2.13 (1.0)`, `reg_alpha=1.84 (0)`,
+`subsample=0.90 (0.8)`, `colsample_bytree=0.66 (0.8)`, `gamma=1.51 (0)`.
+Pattern: **slower + wider + more regularised**.
+
+**Threshold trade-off (v4-tuned)**: at the shipped cutoff 0.5, F1 dips
+0.011 vs v4 because the tuned model is more conservative (precision +0.023,
+recall −0.018). A clean out-of-fold sweep on val places the F1-optimal
+cutoff at **0.30**, delivering test F1=0.5708 with P=0.49 R=0.68 — the
+trade-off is intentional: keep threshold=0.5 for "confident tickets", drop
+to 0.3 for "horses likely to podium".
+
+**Latency impact**: v4=60 ms / v4-tuned=76 ms per 12-horse batch (CPU,
+measured), single-horse 26 → 30 ms. +27 % relative, +16 ms absolute. No
+user-visible regression on the API.
 
 **Reading the numbers**
 

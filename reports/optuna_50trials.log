@@ -1,0 +1,276 @@
+nohup: ignoring input
+2026-07-11 18:16:42,267 INFO src.ingestion.loader | Loading cached dataset from /home/mgili/Workspace/ORT/ML Prod/Obligatorio/data/processed/history.parquet
+2026-07-11 18:16:42,387 INFO __main__ | Loaded 82595 labelled rows. Positive rate: 0.358
+2026-07-11 18:16:42,449 INFO src.training.split | Temporal split @ 2024-04-14 | train=65990 (2013..2024-04-13)  test=16605 (2024-04-14..2025-07-27)
+2026-07-11 18:16:42,480 INFO src.training.split | Temporal split @ 2023-04-30 | train=52703 (2013..2023-04-29)  test=13287 (2023-04-30..2024-04-13)
+2026-07-11 18:16:43,205 INFO src.features.pipeline | FeatureEngineeringPipeline fitted on 52703 rows / 5749 horses / 271 jockeys
+2026-07-11 18:20:08,883 INFO __main__ | Tuning splits | train_inner=52703  val=13287  test_held_out=16605
+2026/07/11 18:20:08 INFO mlflow.tracking.fluent: Experiment with name 'trifecta-classifier' does not exist. Creating a new experiment.
+[I 2026-07-11 18:20:08,892] A new study created in memory with name: trifecta_optuna_2024-04-14
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:14,634] Trial 0 finished with value: 0.6206292379948086 and parameters: {'n_estimators': 550, 'max_depth': 10, 'learning_rate': 0.08960785365368121, 'min_child_weight': 6, 'reg_lambda': 0.7800932022121826, 'reg_alpha': 0.3119890406724053, 'subsample': 0.6232334448672797, 'colsample_bytree': 0.9464704583099741, 'gamma': 3.005575058716044}. Best is trial 0 with value: 0.6206292379948086.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:19,068] Trial 1 finished with value: 0.6216096667537937 and parameters: {'n_estimators': 900, 'max_depth': 3, 'learning_rate': 0.18276027831785724, 'min_child_weight': 9, 'reg_lambda': 1.0616955533913808, 'reg_alpha': 0.36364993441420124, 'subsample': 0.6733618039413735, 'colsample_bytree': 0.7216968971838151, 'gamma': 2.6237821581611893}. Best is trial 1 with value: 0.6216096667537937.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:26,340] Trial 2 finished with value: 0.6305817616501768 and parameters: {'n_estimators': 650, 'max_depth': 5, 'learning_rate': 0.06252287916406217, 'min_child_weight': 2, 'reg_lambda': 1.4607232426760908, 'reg_alpha': 0.7327236865873834, 'subsample': 0.7824279936868144, 'colsample_bytree': 0.9140703845572055, 'gamma': 0.9983689107917987}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:34,646] Trial 3 finished with value: 0.6258960493927637 and parameters: {'n_estimators': 700, 'max_depth': 7, 'learning_rate': 0.011492999300221412, 'min_child_weight': 7, 'reg_lambda': 0.8526206184364576, 'reg_alpha': 0.13010318597055903, 'subsample': 0.9795542149013333, 'colsample_bytree': 0.9862528132298237, 'gamma': 4.041986740582305}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:36,822] Trial 4 finished with value: 0.6292999118240246 and parameters: {'n_estimators': 500, 'max_depth': 3, 'learning_rate': 0.07766184280392888, 'min_child_weight': 5, 'reg_lambda': 0.6101911742238941, 'reg_alpha': 0.9903538202225404, 'subsample': 0.6137554084460873, 'colsample_bytree': 0.9637281608315128, 'gamma': 1.2938999080000846}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:39,721] Trial 5 finished with value: 0.6248694834964605 and parameters: {'n_estimators': 850, 'max_depth': 5, 'learning_rate': 0.04749239763680407, 'min_child_weight': 6, 'reg_lambda': 0.9242722776276352, 'reg_alpha': 1.9391692555291171, 'subsample': 0.9100531293444458, 'colsample_bytree': 0.9757995766256756, 'gamma': 4.474136752138244}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:46,093] Trial 6 finished with value: 0.6295520137557759 and parameters: {'n_estimators': 800, 'max_depth': 10, 'learning_rate': 0.01303561122512888, 'min_child_weight': 2, 'reg_lambda': 0.22613644455269033, 'reg_alpha': 0.6506606615265287, 'subsample': 0.7554709158757928, 'colsample_bytree': 0.7085396127095583, 'gamma': 4.143687545759647}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:47,658] Trial 7 finished with value: 0.6270317426516598 and parameters: {'n_estimators': 550, 'max_depth': 5, 'learning_rate': 0.05082341959721458, 'min_child_weight': 2, 'reg_lambda': 4.010984903770199, 'reg_alpha': 0.14910128735954165, 'subsample': 0.9947547746402069, 'colsample_bytree': 0.908897907718663, 'gamma': 0.993578407670862}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:48,851] Trial 8 finished with value: 0.6285502265720296 and parameters: {'n_estimators': 200, 'max_depth': 9, 'learning_rate': 0.08310795711416077, 'min_child_weight': 8, 'reg_lambda': 3.8563517334297286, 'reg_alpha': 0.14808930346818072, 'subsample': 0.7433862914177091, 'colsample_bytree': 0.6463476238100518, 'gamma': 4.315517129377968}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:51,889] Trial 9 finished with value: 0.6266964243883014 and parameters: {'n_estimators': 850, 'max_depth': 5, 'learning_rate': 0.012097379927033842, 'min_child_weight': 4, 'reg_lambda': 1.6259166101337352, 'reg_alpha': 1.4592123566761281, 'subsample': 0.8550229885420852, 'colsample_bytree': 0.9548850970305306, 'gamma': 2.3610746258097466}. Best is trial 2 with value: 0.6305817616501768.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:20:59,099] Trial 10 finished with value: 0.6316602605533607 and parameters: {'n_estimators': 1200, 'max_depth': 7, 'learning_rate': 0.024456462052700165, 'min_child_weight': 10, 'reg_lambda': 2.6276372894275966, 'reg_alpha': 1.1504161336305452, 'subsample': 0.8189071324479795, 'colsample_bytree': 0.837520667452526, 'gamma': 0.2600428480983542}. Best is trial 10 with value: 0.6316602605533607.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:04,863] Trial 11 finished with value: 0.6303028222859071 and parameters: {'n_estimators': 1200, 'max_depth': 7, 'learning_rate': 0.024133658500130925, 'min_child_weight': 10, 'reg_lambda': 2.4032717670818906, 'reg_alpha': 0.9637926593266593, 'subsample': 0.8159058150301346, 'colsample_bytree': 0.8474384528120613, 'gamma': 0.024366695602477922}. Best is trial 10 with value: 0.6316602605533607.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:11,995] Trial 12 finished with value: 0.6306219936863837 and parameters: {'n_estimators': 1150, 'max_depth': 7, 'learning_rate': 0.02597793980192431, 'min_child_weight': 1, 'reg_lambda': 2.935178409521971, 'reg_alpha': 1.2148813395941118, 'subsample': 0.8141978064593092, 'colsample_bytree': 0.8372996640654502, 'gamma': 0.018190830233141497}. Best is trial 10 with value: 0.6316602605533607.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:17,536] Trial 13 finished with value: 0.6296236330352549 and parameters: {'n_estimators': 1200, 'max_depth': 7, 'learning_rate': 0.02628151486123009, 'min_child_weight': 4, 'reg_lambda': 2.9882653676550204, 'reg_alpha': 1.3824288857998095, 'subsample': 0.8811366281048426, 'colsample_bytree': 0.8195648200517236, 'gamma': 0.09160926784003709}. Best is trial 10 with value: 0.6316602605533607.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:23,622] Trial 14 finished with value: 0.6247863157980779 and parameters: {'n_estimators': 1050, 'max_depth': 8, 'learning_rate': 0.029368582096652416, 'min_child_weight': 1, 'reg_lambda': 4.981164605211408, 'reg_alpha': 1.4425669126378744, 'subsample': 0.6993541774800387, 'colsample_bytree': 0.8375814833717212, 'gamma': 0.5686811478675277}. Best is trial 10 with value: 0.6316602605533607.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:28,768] Trial 15 finished with value: 0.6333317149317177 and parameters: {'n_estimators': 1050, 'max_depth': 8, 'learning_rate': 0.018648912628200166, 'min_child_weight': 10, 'reg_lambda': 2.6657889622522943, 'reg_alpha': 1.1785366071307288, 'subsample': 0.8242608922062848, 'colsample_bytree': 0.7555209624547881, 'gamma': 1.7636422180458196}. Best is trial 15 with value: 0.6333317149317177.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:32,404] Trial 16 finished with value: 0.6337526658424082 and parameters: {'n_estimators': 1000, 'max_depth': 8, 'learning_rate': 0.017959734634943225, 'min_child_weight': 10, 'reg_lambda': 2.2062788499774078, 'reg_alpha': 1.7755489416722843, 'subsample': 0.9146089241486842, 'colsample_bytree': 0.7555076779145545, 'gamma': 1.7919514239527088}. Best is trial 16 with value: 0.6337526658424082.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:40,433] Trial 17 finished with value: 0.6329887121487416 and parameters: {'n_estimators': 1000, 'max_depth': 9, 'learning_rate': 0.016428197080173845, 'min_child_weight': 9, 'reg_lambda': 2.006351943584681, 'reg_alpha': 1.876911754519154, 'subsample': 0.9384233144028683, 'colsample_bytree': 0.7756681098874657, 'gamma': 1.7724724839674224}. Best is trial 16 with value: 0.6337526658424082.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:47,736] Trial 18 finished with value: 0.633543144698962 and parameters: {'n_estimators': 1000, 'max_depth': 8, 'learning_rate': 0.01731752272762223, 'min_child_weight': 8, 'reg_lambda': 3.5285676616738213, 'reg_alpha': 1.6537346219316746, 'subsample': 0.9342146903446584, 'colsample_bytree': 0.6360696211789711, 'gamma': 1.9098950400839405}. Best is trial 16 with value: 0.6337526658424082.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:21:54,365] Trial 19 finished with value: 0.6316612644774402 and parameters: {'n_estimators': 950, 'max_depth': 9, 'learning_rate': 0.04078939055264839, 'min_child_weight': 8, 'reg_lambda': 3.761211883199128, 'reg_alpha': 1.7498455305374758, 'subsample': 0.9375860908177559, 'colsample_bytree': 0.6117334516875461, 'gamma': 3.1221500739551447}. Best is trial 16 with value: 0.6337526658424082.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:00,356] Trial 20 finished with value: 0.6300516730091479 and parameters: {'n_estimators': 750, 'max_depth': 6, 'learning_rate': 0.017250878581446315, 'min_child_weight': 8, 'reg_lambda': 3.3140633328636833, 'reg_alpha': 1.6771741334118313, 'subsample': 0.9538145529019646, 'colsample_bytree': 0.6738399055912927, 'gamma': 1.938753107796}. Best is trial 16 with value: 0.6337526658424082.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:17,235] Trial 21 finished with value: 0.6342550457111262 and parameters: {'n_estimators': 1100, 'max_depth': 8, 'learning_rate': 0.017563420206771766, 'min_child_weight': 10, 'reg_lambda': 2.149872794581777, 'reg_alpha': 1.6220531887025584, 'subsample': 0.8845191848556345, 'colsample_bytree': 0.7608903471387501, 'gamma': 1.7061044151065186}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:24,208] Trial 22 finished with value: 0.6315052409389682 and parameters: {'n_estimators': 1100, 'max_depth': 8, 'learning_rate': 0.01568001200576774, 'min_child_weight': 9, 'reg_lambda': 2.072892016158609, 'reg_alpha': 1.632750748376001, 'subsample': 0.8802489778678998, 'colsample_bytree': 0.7364299902367083, 'gamma': 2.2194414773659705}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:27,396] Trial 23 finished with value: 0.6317249437168301 and parameters: {'n_estimators': 950, 'max_depth': 8, 'learning_rate': 0.0342986534526446, 'min_child_weight': 9, 'reg_lambda': 4.400131173613442, 'reg_alpha': 1.9943902435070613, 'subsample': 0.8944103782781355, 'colsample_bytree': 0.7844707023078049, 'gamma': 1.48483725442343}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:31,810] Trial 24 finished with value: 0.6318623219644868 and parameters: {'n_estimators': 1050, 'max_depth': 9, 'learning_rate': 0.020336582002622776, 'min_child_weight': 7, 'reg_lambda': 1.831786844003066, 'reg_alpha': 1.5734999464593962, 'subsample': 0.9183007171468729, 'colsample_bytree': 0.6831640827488645, 'gamma': 3.534164643549822}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:35,515] Trial 25 finished with value: 0.6308711622972586 and parameters: {'n_estimators': 1100, 'max_depth': 6, 'learning_rate': 0.014473525335316982, 'min_child_weight': 10, 'reg_lambda': 3.3792004674770535, 'reg_alpha': 1.8410267896347763, 'subsample': 0.865140008739067, 'colsample_bytree': 0.6083971266710799, 'gamma': 2.6018774978715244}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:44,258] Trial 26 finished with value: 0.6334710296895181 and parameters: {'n_estimators': 950, 'max_depth': 8, 'learning_rate': 0.01068140303682144, 'min_child_weight': 8, 'reg_lambda': 2.135171753702083, 'reg_alpha': 1.5444797708857583, 'subsample': 0.9634828118536135, 'colsample_bytree': 0.6563702420571922, 'gamma': 1.3529050228592547}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:22:45,912] Trial 27 finished with value: 0.618942634387036 and parameters: {'n_estimators': 250, 'max_depth': 6, 'learning_rate': 0.020670369989815036, 'min_child_weight': 7, 'reg_lambda': 3.391552914011191, 'reg_alpha': 1.7455986846233098, 'subsample': 0.8464251883748246, 'colsample_bytree': 0.7797473242995243, 'gamma': 0.7741253093627474}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:05,770] Trial 28 finished with value: 0.6322771724918432 and parameters: {'n_estimators': 1000, 'max_depth': 10, 'learning_rate': 0.010047431076429927, 'min_child_weight': 9, 'reg_lambda': 1.2872711877594771, 'reg_alpha': 1.3159424979586953, 'subsample': 0.9182261992060284, 'colsample_bytree': 0.699396731668712, 'gamma': 1.9929864115124267}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:10,589] Trial 29 finished with value: 0.6302949697681285 and parameters: {'n_estimators': 1100, 'max_depth': 10, 'learning_rate': 0.03411810911782739, 'min_child_weight': 10, 'reg_lambda': 4.413549288847731, 'reg_alpha': 1.7779077368010596, 'subsample': 0.9626840352744744, 'colsample_bytree': 0.635825950455005, 'gamma': 3.00120582375693}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:16,332] Trial 30 finished with value: 0.6325912858800293 and parameters: {'n_estimators': 850, 'max_depth': 9, 'learning_rate': 0.020950585514581375, 'min_child_weight': 6, 'reg_lambda': 2.933356974261722, 'reg_alpha': 1.5782677560203302, 'subsample': 0.9015121537750121, 'colsample_bytree': 0.8099130199166444, 'gamma': 1.5764304855864948}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:21,726] Trial 31 finished with value: 0.6325060843939362 and parameters: {'n_estimators': 950, 'max_depth': 8, 'learning_rate': 0.010789211215271287, 'min_child_weight': 8, 'reg_lambda': 2.2725245766463607, 'reg_alpha': 1.4748648182979678, 'subsample': 0.9993986750197683, 'colsample_bytree': 0.6555447055120316, 'gamma': 1.3367309649192893}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:23,138] Trial 32 finished with value: 0.6255784163040414 and parameters: {'n_estimators': 900, 'max_depth': 8, 'learning_rate': 0.16308733916834117, 'min_child_weight': 9, 'reg_lambda': 1.748624729076752, 'reg_alpha': 1.5956968567122025, 'subsample': 0.9623490525894131, 'colsample_bytree': 0.7400243637843621, 'gamma': 2.3184328064217246}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:27,442] Trial 33 finished with value: 0.6336757927470811 and parameters: {'n_estimators': 1000, 'max_depth': 8, 'learning_rate': 0.014273305609767044, 'min_child_weight': 8, 'reg_lambda': 1.2649023186020933, 'reg_alpha': 1.2969184899759567, 'subsample': 0.9380113456115445, 'colsample_bytree': 0.679490888668883, 'gamma': 1.1404005969428677}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:35,597] Trial 34 finished with value: 0.6334702082496374 and parameters: {'n_estimators': 1000, 'max_depth': 9, 'learning_rate': 0.013663125456909087, 'min_child_weight': 7, 'reg_lambda': 0.48411554685583136, 'reg_alpha': 1.3516588443034758, 'subsample': 0.9327820599144391, 'colsample_bytree': 0.6898056514847506, 'gamma': 0.9750086101303559}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:38,684] Trial 35 finished with value: 0.6315097518513022 and parameters: {'n_estimators': 650, 'max_depth': 7, 'learning_rate': 0.0153573813009346, 'min_child_weight': 6, 'reg_lambda': 1.2541114363981796, 'reg_alpha': 0.9907252726897209, 'subsample': 0.8860714579193617, 'colsample_bytree': 0.8747118615460108, 'gamma': 2.0061589225855325}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:42,296] Trial 36 finished with value: 0.6281511910145883 and parameters: {'n_estimators': 1150, 'max_depth': 8, 'learning_rate': 0.018331219239165284, 'min_child_weight': 9, 'reg_lambda': 1.4610885597098044, 'reg_alpha': 1.2616393508815447, 'subsample': 0.8411240908284312, 'colsample_bytree': 0.7255455505233162, 'gamma': 4.99320466279643}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:49,324] Trial 37 finished with value: 0.6307966116533598 and parameters: {'n_estimators': 900, 'max_depth': 7, 'learning_rate': 0.01335030532717828, 'min_child_weight': 10, 'reg_lambda': 0.0008968705545935318, 'reg_alpha': 0.5596327323046583, 'subsample': 0.6454078948307838, 'colsample_bytree': 0.7600130676745886, 'gamma': 0.5410459646580452}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:51,597] Trial 38 finished with value: 0.6229223261126193 and parameters: {'n_estimators': 800, 'max_depth': 9, 'learning_rate': 0.14474136889111422, 'min_child_weight': 7, 'reg_lambda': 1.0446057118280205, 'reg_alpha': 1.8959008256082426, 'subsample': 0.9832335299947319, 'colsample_bytree': 0.7183825309504531, 'gamma': 1.10449147976305}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:23:58,737] Trial 39 finished with value: 0.630205586946464 and parameters: {'n_estimators': 1150, 'max_depth': 6, 'learning_rate': 0.023214642522954163, 'min_child_weight': 8, 'reg_lambda': 0.6359768225609571, 'reg_alpha': 1.0605474411726377, 'subsample': 0.9159922688327194, 'colsample_bytree': 0.6222496187523374, 'gamma': 2.714104800559565}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:01,128] Trial 40 finished with value: 0.6147562313491861 and parameters: {'n_estimators': 750, 'max_depth': 4, 'learning_rate': 0.012331002766874136, 'min_child_weight': 5, 'reg_lambda': 2.5391493713876416, 'reg_alpha': 0.8671079774175552, 'subsample': 0.8742829217345914, 'colsample_bytree': 0.670554765907516, 'gamma': 1.6791514432762704}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:07,236] Trial 41 finished with value: 0.6339804789191426 and parameters: {'n_estimators': 1000, 'max_depth': 8, 'learning_rate': 0.01160931527940697, 'min_child_weight': 8, 'reg_lambda': 2.146088068326561, 'reg_alpha': 1.5056240025303746, 'subsample': 0.956965158654349, 'colsample_bytree': 0.6514266437223722, 'gamma': 1.1700814543296807}. Best is trial 21 with value: 0.6342550457111262.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:20,704] Trial 42 finished with value: 0.6343484874798739 and parameters: {'n_estimators': 1050, 'max_depth': 8, 'learning_rate': 0.015111751068803948, 'min_child_weight': 9, 'reg_lambda': 1.8953913657173311, 'reg_alpha': 1.6786606576308534, 'subsample': 0.9454822923637332, 'colsample_bytree': 0.6261881411501714, 'gamma': 1.1393423029466465}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:23,971] Trial 43 finished with value: 0.6237665428173917 and parameters: {'n_estimators': 400, 'max_depth': 7, 'learning_rate': 0.013214305355367039, 'min_child_weight': 10, 'reg_lambda': 1.5946902389661566, 'reg_alpha': 1.482370815195738, 'subsample': 0.9805322439233819, 'colsample_bytree': 0.705834382146256, 'gamma': 1.2309299960183926}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:36,834] Trial 44 finished with value: 0.6342964762419012 and parameters: {'n_estimators': 1050, 'max_depth': 9, 'learning_rate': 0.011732528880578031, 'min_child_weight': 9, 'reg_lambda': 2.304539244913011, 'reg_alpha': 1.731024092384852, 'subsample': 0.9537424181456644, 'colsample_bytree': 0.6613595001537793, 'gamma': 0.8731178384116094}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:48,468] Trial 45 finished with value: 0.6336000500239101 and parameters: {'n_estimators': 1100, 'max_depth': 10, 'learning_rate': 0.0115008602221876, 'min_child_weight': 9, 'reg_lambda': 1.8734977933539116, 'reg_alpha': 1.7855202895290887, 'subsample': 0.9515684076699952, 'colsample_bytree': 0.7994572187667724, 'gamma': 0.7944168890851503}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:53,836] Trial 46 finished with value: 0.633511348678939 and parameters: {'n_estimators': 900, 'max_depth': 9, 'learning_rate': 0.01178554652430917, 'min_child_weight': 9, 'reg_lambda': 2.4082420506772375, 'reg_alpha': 1.7218061543457859, 'subsample': 0.912794673497945, 'colsample_bytree': 0.6397801984200455, 'gamma': 0.3965392768623796}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:24:56,088] Trial 47 finished with value: 0.6274552006940707 and parameters: {'n_estimators': 1050, 'max_depth': 9, 'learning_rate': 0.10684744466350522, 'min_child_weight': 10, 'reg_lambda': 2.674759649410417, 'reg_alpha': 1.9971387328291703, 'subsample': 0.9847348390179679, 'colsample_bytree': 0.6020456265232905, 'gamma': 0.7247770315305752}. Best is trial 42 with value: 0.6343484874798739.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:25:07,191] Trial 48 finished with value: 0.6350111373150448 and parameters: {'n_estimators': 1150, 'max_depth': 7, 'learning_rate': 0.01944558290110939, 'min_child_weight': 10, 'reg_lambda': 2.1316645673506582, 'reg_alpha': 1.8384783869706245, 'subsample': 0.899777523306629, 'colsample_bytree': 0.6618304761284186, 'gamma': 1.5065670846936685}. Best is trial 48 with value: 0.6350111373150448.
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+[I 2026-07-11 18:25:15,193] Trial 49 finished with value: 0.6306634165465251 and parameters: {'n_estimators': 1150, 'max_depth': 7, 'learning_rate': 0.030281349837284196, 'min_child_weight': 9, 'reg_lambda': 3.0841392252137094, 'reg_alpha': 1.3979412840868721, 'subsample': 0.7912871819327936, 'colsample_bytree': 0.660488082536766, 'gamma': 0.9909819713893179}. Best is trial 48 with value: 0.6350111373150448.
+2026-07-11 18:25:15,194 INFO __main__ | Best PR-AUC=0.6350 | best params={'n_estimators': 1150, 'max_depth': 7, 'learning_rate': 0.01944558290110939, 'min_child_weight': 10, 'reg_lambda': 2.1316645673506582, 'reg_alpha': 1.8384783869706245, 'subsample': 0.899777523306629, 'colsample_bytree': 0.6618304761284186, 'gamma': 1.5065670846936685}
+2026-07-11 18:25:15,697 INFO src.features.pipeline | FeatureEngineeringPipeline fitted on 65990 rows / 6657 horses / 313 jockeys
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+2026-07-11 18:28:55,333 INFO __main__ | Refit on full train | test metrics: {'test_roc_auc': 0.7093478318172817, 'test_pr_auc': 0.6428085020029253, 'test_log_loss': 0.58557908859704, 'test_brier': 0.20032151650053204, 'test_f1_at_05': 0.4417759171532445, 'test_precision_at_05': 0.7140313390313391, 'test_recall_at_05': 0.31982772371989154, 'test_positive_rate': 0.3775368864799759}
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/mlflow/types/utils.py:452: UserWarning: Hint: Inferred schema contains integer column(s). Integer columns in Python cannot represent missing values. If your input data contains missing values at inference time, it will be encoded as floats and will cause a schema enforcement error. The best way to avoid this problem is to infer the model schema based on a realistic data sample (training dataset) that includes missing values. Alternatively, you can declare integer columns as doubles (float64) whenever these columns may have missing values. See `Handling Integers With Missing Values <https://www.mlflow.org/docs/latest/models.html#handling-integers-with-missing-values>`_ for more details.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/mlflow/types/utils.py:452: UserWarning: Hint: Inferred schema contains integer column(s). Integer columns in Python cannot represent missing values. If your input data contains missing values at inference time, it will be encoded as floats and will cause a schema enforcement error. The best way to avoid this problem is to infer the model schema based on a realistic data sample (training dataset) that includes missing values. Alternatively, you can declare integer columns as doubles (float64) whenever these columns may have missing values. See `Handling Integers With Missing Values <https://www.mlflow.org/docs/latest/models.html#handling-integers-with-missing-values>`_ for more details.
+  warnings.warn(
+/home/mgili/Workspace/ORT/ML Prod/Obligatorio/.venv/lib/python3.10/site-packages/sklearn/impute/_base.py:653: UserWarning: Skipping features without any observed values: ['post_position']. At least one non-missing value is needed for imputation with strategy='median'.
+  warnings.warn(
