@@ -19,6 +19,7 @@
 - ✅ Report — `reports/informe.md` (19 sections) rendered to `reports/informe.pdf` (24 pages, 1.46 MB) via WeasyPrint.
 - ✅ Calibration plot, `/predict_explain` endpoint, full Docker stack live with Streamlit screenshots, MLflow Registry on Postgres exercised end-to-end.
 - ✅ Live race-day predictions — `src/ingestion/program.py` (Programa scrape + Tesseract OCR of distance badges) + `POST /predict_program` endpoint + Streamlit "🗓️ Race day" tab. End-to-end verified on 2026-06-19 (9 races, OCR 9/9 correct).
+- ✅ Per-horse SHAP explanations in the UI — every Race-day row has a "🔍 Explicar" button that calls `/predict_explain` and renders the top contributions as a green/red Altair bar chart inside the same race block. Bug fixed: predictions are now persisted in `st.session_state["prog_data"]` so per-race button reruns don't wipe the field; also switched both date pickers to `America/Montevideo` so the default doesn't roll a day too early when the container clock is in UTC.
 - ✅ Daily scheduler — `scheduler/main.py` (APScheduler 06:30 UY) + `docker/scheduler.Dockerfile` + compose service `hipica_scheduler`. Pre-warms the API cache for today + tomorrow on every configured racetrack.
 - 🟡 Hyperparameter tuning — script ready (`src/training/tune.py`), 3-trial smoke test green; full 50-trial run pending.
 

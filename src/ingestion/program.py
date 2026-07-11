@@ -315,8 +315,16 @@ def _parse_entries(xls_path: Path) -> list[RaceCard]:
 
 
 # ---------------------------------------------------------------------------
-def parse_program(xls_path: Path, ocr_dump_dir: Path | None = None) -> list[RaceCard]:
+def parse_program(
+    xls_path: Path,
+    ocr_dump_dir: Path | None = None,
+    force_ocr: bool = False,
+) -> list[RaceCard]:
     """Parse a Programa .xls into a list of :class:`RaceCard`.
+
+    OCR is the slow step (~45s for 9 races on CPU). The extracted
+    distances are persisted next to the .xls as ``<stem>.distances.json``
+    and reused on subsequent calls unless ``force_ocr`` is set.
 
     Side-effect: dumps the OCR-input images under ``ocr_dump_dir`` (defaults
     to ``<xls>.ocr_imgs/``).
@@ -325,13 +333,35 @@ def parse_program(xls_path: Path, ocr_dump_dir: Path | None = None) -> list[Race
     if not races:
         return []
 
-    work_dir = ocr_dump_dir or xls_path.with_suffix(".ocr_imgs")
-    xlsx = _xls_to_xlsx(xls_path, out_dir=work_dir.parent)
-    distances = _extract_distances(xlsx, dump_dir=work_dir)
+    cache_path = xls_path.with_suffix(".distances.json")
+    distances: list[int | None] | None = None
 
-    # Pad/truncate to match number of races.
-    if len(distances) < len(races):
-        distances = list(distances) + [None] * (len(races) - len(distances))
+    if cache_path.exists() and not force_ocr:
+        try:
+            import json
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            if isinstance(cached, list) and len(cached) == len(races):
+                distances = [int(d) if d is not None else None for d in cached]
+                logger.info("Reusing cached OCR distances from %s", cache_path.name)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to read distance cache %s: %s", cache_path, exc)
+
+    if distances is None:
+        work_dir = ocr_dump_dir or xls_path.with_suffix(".ocr_imgs")
+        xlsx = _xls_to_xlsx(xls_path, out_dir=work_dir.parent)
+        distances = _extract_distances(xlsx, dump_dir=work_dir)
+        # Pad/truncate to match number of races before caching.
+        if len(distances) < len(races):
+            distances = list(distances) + [None] * (len(races) - len(distances))
+        elif len(distances) > len(races):
+            distances = distances[: len(races)]
+        try:
+            import json
+            cache_path.write_text(json.dumps(distances), encoding="utf-8")
+            logger.info("Cached OCR distances to %s", cache_path.name)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to write distance cache %s: %s", cache_path, exc)
+
     for race, dist in zip(races, distances):
         race.distance_m = dist or 0
 
@@ -346,13 +376,17 @@ def fetch_program(
     scraper: MaronasScraper | None = None,
     force: bool = False,
 ) -> list[RaceCard]:
-    """End-to-end: download (if needed) and parse the Programa for one day."""
+    """End-to-end: download (if needed) and parse the Programa for one day.
+
+    When ``force`` is True both the download and the OCR cache are
+    invalidated.
+    """
     s = scraper or MaronasScraper()
     day = RaceDay(racetrack_id=racetrack_id, date=race_date, has_program=True)
     xls = fetch_program_xls(day, dest_dir=raw_dir, scraper=s, force=force)
     if xls is None:
         return []
-    return parse_program(xls)
+    return parse_program(xls, force_ocr=force)
 
 
 def list_upcoming_program_days(
