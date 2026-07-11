@@ -13,13 +13,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/app
 
-# Only tesseract-ocr is required at runtime (OCR for distance badges) plus
-# curl for the healthcheck. All Python deps ship as manylinux wheels so we do
-# NOT need build-essential/libpq-dev, and LibreOffice is never used (the .xls
-# loader uses xlrd).
+# Runtime OS dependencies:
+#   curl            healthcheck
+#   tesseract-ocr   OCR for the Programa distance badges
+#   libreoffice-calc  converts Crystal-Reports .xls → .xlsx so we can pull
+#                   the embedded badge images out. The Tabulada loader uses
+#                   xlrd and doesn't need it, but /predict_program (Programa
+#                   parsing in src/ingestion/program.py) shells out to
+#                   `libreoffice --headless --convert-to xlsx`. Adds ~400 MB
+#                   but there is no lighter alternative.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      curl tesseract-ocr \
+      curl tesseract-ocr libreoffice-calc \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -33,3 +33,8 @@ Obligatorio_Machine_Learning_en_Produccion.pdf
 
 # Intermediate HTML used to render the informe (regenerated from informe.md)
 reports/informe.html
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

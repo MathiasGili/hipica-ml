@@ -1,0 +1,72 @@
+# ============================================================================
+# .ebignore — files NOT included in the EBS deploy bundle
+# ----------------------------------------------------------------------------
+# Format: same as .gitignore. When present, EBS uses this instead of .gitignore
+# to decide what to zip and upload.
+#
+# What we DO keep:
+#   docker-compose.yml       (EBS reads this)
+#   docker/                  (Dockerfiles for api + streamlit)
+#   docker/requirements-*.txt
+#   src/  api/  app/         (application code)
+#   models/                  (baked-in joblib artifacts, ~33 MB)
+#   data/processed/          (history parquet, ~1.4 MB)
+# ============================================================================
+
+# --- Git / DVC metadata --------------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+.dvc/
+.dvcignore
+*.dvc
+
+# --- Local docker-compose (not used by EBS) -----------------------------------
+docker-compose.local.yml
+
+# --- Large local-only data (1.3 GB!) ------------------------------------------
+data/raw/
+data/interim/
+
+# --- Notebooks + local MLflow runs --------------------------------------------
+notebooks/
+mlruns/
+
+# --- Reports + generated figures ----------------------------------------------
+reports/
+
+# --- Local training / dev docs ------------------------------------------------
+CLAUDE.md
+TODO.md
+Ejemplo de despliegue EBS.pdf
+Obligatorio_Machine_Learning_en_Produccion.pdf
+
+# --- Python caches ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Tests --------------------------------------------------------------------
+tests/
+
+# --- Editor / OS --------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Local env (EBS uses `eb setenv` for env vars) ----------------------------
+.env
+.env.local
+.env.example
+
+# --- EB CLI internal state ----------------------------------------------------
+.elasticbeanstalk/

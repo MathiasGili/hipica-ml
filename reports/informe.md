@@ -29,12 +29,16 @@ positiva 37.8 %). La precisión del modelo a umbral 0.5 (0.691) es
 **1.83×** la tasa base, lo que lo hace utilizable como filtro en una
 estrategia de apuesta.
 
-La entrega cumple los electivos exigidos (mínimo 3) con seis:
+La entrega cumple los electivos exigidos (mínimo 3) con siete:
 **(1)** scraper completo con tenacity y manejo de BOM,
 **(2)** trazabilidad de experimentos, modelos y datos
 (MLflow + DVC), **(3)** UI Streamlit, **(4)** explicabilidad
-SHAP, **(5)** selección de features con cuatro métricas
-y **(6)** búsqueda de hiperparámetros con Optuna.
+SHAP, **(5)** selección de features con cuatro métricas,
+**(6)** búsqueda de hiperparámetros con Optuna y
+**(7)** despliegue en la nube en **AWS Elastic Beanstalk**
+(pila `api + streamlit` sobre `t3.small` Docker en el default VPC
+del Learner Lab; UI pública en `hipica-ml-prod.eba-d63jdkhp.us-east-1.elasticbeanstalk.com`,
+Swagger en `:8080/docs`).
 Todo el código está bajo licencia MIT y un workflow de GitHub Actions
 ejecuta los tests anti-skew en cada `push` a `main`.
 
@@ -345,9 +349,11 @@ servidor de tracking.
 
 ---
 
-## 9. Despliegue — Docker Compose
+## 9. Despliegue
 
-`docker-compose.yml` define cinco servicios:
+### 9.1 Local — Docker Compose
+
+`docker-compose.local.yml` define cinco servicios:
 
 | Servicio | Imagen | Rol | Puerto |
 |---|---|---|---|
@@ -367,6 +373,122 @@ El PDF del curso menciona AWS como **recomendado, no obligatorio**
 usarlas"). Docker Compose corre limpio en cualquier host con Docker
 ≥ 24, y el perfil `--profile training` activa el container CUDA si el
 host tiene NVIDIA Container Toolkit.
+
+```bash
+docker compose -f docker-compose.local.yml up -d postgres mlflow api streamlit
+# UI:    http://localhost:8501
+# API:   http://localhost:8000/docs
+# MLflow: http://localhost:5000
+```
+
+### 9.2 Nube — AWS Elastic Beanstalk (AWS Academy)
+
+Para exponer la aplicación en internet se desplegó la pila **api +
+streamlit** en **AWS Elastic Beanstalk** siguiendo el instructivo del
+curso (`Ejemplo de despliegue EBS.pdf`). Se omitieron `postgres`,
+`mlflow` y `scheduler` porque:
+
+- La API usa el **fallback local** de `models/trifecta_pipeline/*.joblib`
+  cuando no hay `MLFLOW_TRACKING_URI` — no necesita el Registry en
+  runtime.
+- Postgres solo respalda a MLflow (no hay datos aplicativos propios
+  todavía).
+- El scheduler es un *cache-warmer* opcional; la API scrapea bajo demanda
+  cuando el usuario pide un `/predict_program`.
+
+Esto reduce la huella a **una única instancia EC2 `t3.small`**
+(2 vCPU, 2 GB RAM), coherente con el presupuesto de 50 USD del
+Learner Lab.
+
+**Artefactos de despliegue** (todos versionados en el repo):
+
+| Archivo | Rol |
+|---|---|
+| `docker-compose.yml` (raíz) | Compose EBS: `api` interno + `streamlit` en 80 |
+| `docker-compose.local.yml` | Compose completo para desarrollo local |
+| `.ebignore` | Excluye `data/raw/` (1.3 GB), notebooks, mlruns, PDFs |
+| `.ebextensions/01-open-api-port.config` | Abre TCP 8080 en el Security Group para exponer `/docs` |
+
+La plataforma seleccionada es **"Docker running on 64bit Amazon
+Linux 2023 v4.13.3"**, que soporta `docker-compose.yml` de forma nativa
+(v2 del plugin de Docker Compose). EBS desempaqueta el bundle en
+`/var/app/current` y corre `docker compose up -d`; los volúmenes
+`./models` y `./data/processed` quedan disponibles dentro de los
+containers y evitan tener que hornear ~35 MB de artefactos en la imagen.
+
+**Restricciones específicas del Learner Lab** (importantes según el
+PDF):
+
+- **VPC preexistente** obligatorio: se usó la default
+  `vpc-061660e979530d048` (172.31.0.0/16) porque el rol `voclabs` no
+  puede crear una VPC nueva.
+- **IAM roles** también preexistentes: `LabInstanceProfile` (backed by
+  `LabRole`) como Instance Profile, `LabRole` como Service Role. El
+  laboratorio bloquea la creación de service roles nuevos.
+- **Sesiones de 4 h**: las credenciales STS (`aws_session_token`) y la
+  instancia EC2 se apagan al vencer la sesión. Se debe reiniciar el
+  lab desde Canvas para que EBS relance la instancia
+  automáticamente.
+
+**Comandos de despliegue reproducibles**:
+
+```bash
+# 1. Credenciales del Learner Lab en ~/.aws/credentials
+mkdir -p ~/.aws && nano ~/.aws/credentials  # pegar bloque [default]
+echo -e "[default]\nregion = us-east-1\noutput = json" > ~/.aws/config
+aws sts get-caller-identity  # debe mostrar ARN "voclabs"
+
+# 2. Descubrir VPC + subnets públicas
+aws ec2 describe-vpcs --query 'Vpcs[].{ID:VpcId,Default:IsDefault}' --output table
+aws ec2 describe-subnets --query 'Subnets[].{ID:SubnetId,AZ:AvailabilityZone,Public:MapPublicIpOnLaunch}' --output table
+
+# 3. Inicializar EB (una sola vez)
+eb init hipica-ml --platform "Docker running on 64bit Amazon Linux 2023" --region us-east-1
+
+# 4. Crear el entorno (~5 min)
+eb create hipica-ml-prod \
+  --instance_type t3.small \
+  --single \
+  --instance_profile LabInstanceProfile \
+  --service-role LabRole \
+  --vpc.id vpc-061660e979530d048 \
+  --vpc.ec2subnets subnet-0ca29ed82ae0d9473,subnet-0cc3ff53f4ccfd99d,subnet-0064bccc4c5ecbae3 \
+  --vpc.publicip
+
+# 5. Redeploys posteriores
+eb deploy    # zip + upload + docker compose up (~2 min)
+
+# 6. Cuando termine la corrección — liberar recursos
+eb terminate hipica-ml-prod
+```
+
+**Resultado — entorno vivo**:
+
+- **UI Streamlit**:
+  <http://hipica-ml-prod.eba-d63jdkhp.us-east-1.elasticbeanstalk.com>
+- **Swagger / OpenAPI**:
+  <http://hipica-ml-prod.eba-d63jdkhp.us-east-1.elasticbeanstalk.com:8080/docs>
+- **`/health`** responde `{"status":"ok","model_name":"local"}`
+  confirmando que el fallback joblib cargó correctamente (sin MLflow
+  disponible).
+
+Verificación de la API sobre la URL pública (`predict_online` y
+`predict_batch`) responde en < 1 s por request y devuelve
+probabilidades coherentes con el ranking observado en desarrollo.
+`predict_program` toma 30–60 s la primera vez que se pide una fecha
+(scraping + LibreOffice + OCR + inferencia), y respuesta inmediata
+en llamadas subsecuentes gracias al caché interno del container.
+
+**Un tropezón real durante el despliegue** — quedó documentado en §16
+como el 4to bug: la Dockerfile de la API había sido optimizada
+localmente eliminando `libreoffice-calc` bajo la suposición de que
+no se usaba (el loader de Tabuladas usa `xlrd`). En producción el
+endpoint `/predict_program` falló con
+`FileNotFoundError: [Errno 2] No such file or directory: 'libreoffice'`
+porque el parser de **Programas** (`src/ingestion/program.py`) sí
+depende de LibreOffice para extraer las imágenes embebidas de las
+insignias de distancia. Se restauró el paquete y se redeployó
+(`eb deploy`) en ~3 min.
 
 ---
 
@@ -654,6 +776,23 @@ rápidamente la señal disponible de un grupo de features colineales;
 los saltos grandes vienen de información **ortogonal** (mercado,
 cross-entity), no de más agregaciones de la misma señal. v4 demostró
 esto con +0.022 ROC-AUC al sumar dividend + jockey-cross-horse.
+
+### 16.7 Slim de imagen que rompió `/predict_program` en producción
+Al optimizar el tamaño de la imagen Docker de la API para el deploy
+en EBS, se eliminó `libreoffice-calc` del `apt install` bajo la
+suposición de que no se usaba (el loader de Tabuladas usa `xlrd`, no
+LibreOffice). En el primer test end-to-end contra la URL pública,
+`POST /predict_program` respondió **500 Internal Server Error** con
+`FileNotFoundError: [Errno 2] No such file or directory: 'libreoffice'`.
+**Causa real:** el path de Programas (§14.1) sí depende de LibreOffice
+para convertir `.xls → .xlsx` y así acceder a las **imágenes embebidas**
+de las insignias de distancia — algo que `xlrd`/`openpyxl` no pueden
+hacer. **Fix:** restaurar `libreoffice-calc` en `docker/api.Dockerfile`
+(agrega ~400 MB pero es requisito funcional) y `eb deploy` en ~3 min.
+**Lección:** cuando se hace "slim de imagen", auditar todos los
+`subprocess.run` y `pytesseract` / `libreoffice` / `ffmpeg` del código,
+no sólo los `import` de Python. Documentado también en la memoria del
+repositorio para no repetirlo.
 
 ---
 
