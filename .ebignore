@@ -76,6 +76,7 @@ models/trifecta_pipeline_tuned/
 models/trifecta_pipeline_v4tuned_predatafix/
 models/trifecta_pipeline_v4_backup/
 models/trifecta_pipeline_v5datafix_maronasonly/
+models/trifecta_pipeline_v6_prejockeyfix/
 
 # --- Local parquet backups (only ship history.parquet) -----------------------
 data/processed/*.bak

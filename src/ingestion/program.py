@@ -40,6 +40,7 @@ import xlrd
 from PIL import Image, ImageOps
 
 from ..config import MARONAS_RESOURCES_URL, RACETRACKS
+from ..features.pipeline import canonical_jockey_name
 from .scraper import MaronasScraper, RaceDay
 
 logger = logging.getLogger(__name__)
@@ -295,7 +296,10 @@ def _parse_entries(xls_path: Path) -> list[RaceCard]:
 
                 jockey = None
                 if isinstance(jockey_v, str) and jockey_v.strip():
-                    jockey = jockey_v.strip()
+                    # Canonicalize the Programa's "Leonardo L. Silva (-3)" form
+                    # into the historical "L. L. SILVA" shape so jockey-career
+                    # features actually resolve at serve time.
+                    jockey = canonical_jockey_name(jockey_v)
 
                 entries.append(
                     HorseCard(

@@ -36,6 +36,8 @@ incoming API request.
 from __future__ import annotations
 
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable
@@ -53,6 +55,93 @@ from ..config import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Jockey-name canonicalization (single source of truth for training + serving).
+# ---------------------------------------------------------------------------
+# Aprendiz weight-allowance suffix, e.g. " (-3)" trailing a Programa name.
+_APRENDIZ_SUFFIX_RE = re.compile(r"\s*\(\s*-?\s*\d+\s*\)\s*$")
+
+# Surname particles that must stay glued to the surname when reducing the
+# leading name-tokens to initials. Kept short on purpose — every entry we add
+# has been verified against the historical jockey set.
+_SURNAME_PARTICLES: frozenset[str] = frozenset({
+    "DE", "DEL", "DA", "DO", "DI", "DU",
+    "LA", "LE", "LOS", "LAS",
+    "VAN", "VON", "SAN", "SANTA",
+})
+
+
+def _strip_accents(s: str) -> str:
+    """Drop all combining marks (accents, tildes) from ``s``.
+
+    Uses NFD decomposition + filter of Unicode category ``Mn``. Collapses
+    ``Á`` → ``A`` and ``Ñ`` → ``N``. The historical parquet contains
+    9 pairs of jockey names that differ only in accents (e.g. ``RODRÍGUEZ``
+    vs ``RODRIGUEZ``) — stripping unifies them.
+    """
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", s)
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
+def canonical_jockey_name(raw: object) -> str | None:
+    """Return the canonical form used both in the fitted jockey index and
+    in every ``jockey_name`` lookup at serving time.
+
+    Rules (idempotent — running it on a canonical name is a no-op):
+
+    1. Non-string / empty / whitespace → ``None``.
+    2. Trailing aprendiz suffix ``(-N)`` (weight-allowance flag) is dropped.
+    3. Everything is uppercased and accent-stripped.
+    4. The token stream is split into ``(initials..., surname)``.  The
+       surname is the trailing run of non-particle tokens **plus** any
+       leading particles glued to it (``DE ARRASCAETA``, ``DA SILVA``,
+       ``DEL VALLE`` — see :data:`_SURNAME_PARTICLES`).
+    5. Every leading token is reduced to its first letter followed by
+       a period (``LEONARDO`` → ``L.``, ``L.`` stays ``L.``).
+
+    Examples::
+
+        "Leonardo L. Silva (-3)"  →  "L. L. SILVA"
+        "Maicol De Souza"         →  "M. DE SOUZA"
+        "César A. Ibáñez"         →  "C. A. IBANEZ"
+        "L. SILVA"                →  "L. SILVA"        # idempotent
+        "F. G. D'ALBORA"          →  "F. G. D'ALBORA" # idempotent
+        ""                         →  None
+    """
+    if not isinstance(raw, str):
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    # Strip aprendiz weight-allowance suffix and any residual whitespace.
+    s = _APRENDIZ_SUFFIX_RE.sub("", s).strip()
+    if not s:
+        return None
+    s = _strip_accents(s).upper()
+    tokens = s.split()
+    if not tokens:
+        return None
+    # Walk backwards: the surname is at least the last token, plus any
+    # immediately-preceding particles.
+    surname_start = len(tokens) - 1
+    while surname_start > 0 and tokens[surname_start - 1] in _SURNAME_PARTICLES:
+        surname_start -= 1
+    initials: list[str] = []
+    for t in tokens[:surname_start]:
+        if not t:
+            continue
+        # Already an initial like "L." → keep as-is.
+        if len(t) <= 2 and t.endswith("."):
+            initials.append(t)
+        else:
+            initials.append(t[0] + ".")
+    surname = " ".join(tokens[surname_start:])
+    canonical = " ".join(initials + [surname]) if initials else surname
+    return canonical or None
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +208,9 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
         hist["race_date"] = pd.to_datetime(hist["race_date"])
         hist["horse_name"] = hist["horse_name"].astype(str).str.upper().str.strip()
         if "jockey" in hist.columns:
-            hist["jockey"] = hist["jockey"].astype(str).str.upper().str.strip()
+            # Route through the shared canonicalizer so the fitted index keys
+            # are byte-identical to what serving requests produce.
+            hist["jockey"] = hist["jockey"].map(canonical_jockey_name)
         hist = hist.dropna(subset=["finish_pos"])
         hist = hist.sort_values(["horse_name", "race_date"])
         self._history = hist.reset_index(drop=True)
@@ -131,7 +222,7 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
             self._history_by_jockey = {
                 name: g.reset_index(drop=True)
                 for name, g in self._history.groupby("jockey", sort=False)
-                if name and name.lower() not in ("nan", "none", "")
+                if isinstance(name, str) and name
             }
         else:
             self._history_by_jockey = {}
@@ -166,11 +257,7 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
                 targets["jockey_name"] = targets["jockey"]
             else:
                 targets["jockey_name"] = None
-        targets["jockey_name"] = (
-            targets["jockey_name"].astype("object").map(
-                lambda x: x.upper().strip() if isinstance(x, str) and x.strip() else None
-            )
-        )
+        targets["jockey_name"] = targets["jockey_name"].map(canonical_jockey_name)
 
         # Per-race competitive features (z-score of kg within the race, n_field).
         targets = self._add_within_race_features(targets)

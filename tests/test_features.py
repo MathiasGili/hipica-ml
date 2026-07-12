@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.features.pipeline import FeatureEngineeringPipeline
+from src.features.pipeline import FeatureEngineeringPipeline, canonical_jockey_name
 
 
 # ---------------------------------------------------------------------------
@@ -156,3 +156,88 @@ def test_serving_pass_through_columns_are_preserved(
     assert out.loc[1, "post_position"] == 2
     assert out.loc[0, "sex_code"] == "M"
     assert out.loc[1, "sex_code"] == "H"
+
+
+# ---------------------------------------------------------------------------
+# Jockey-name canonicalization
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        # Programa-style raw names → historical short form
+        ("Leonardo L. Silva (-3)",   "L. L. SILVA"),
+        ("Braian Morales (-2)",      "B. MORALES"),
+        ("Christian Villarreal",     "C. VILLARREAL"),
+        ("Waldemar Maciel",          "W. MACIEL"),
+        ("Edison R. Rosas",          "E. R. ROSAS"),
+        # Accents get stripped so the historical duplicates unify.
+        ("César A. Ibáñez",          "C. A. IBANEZ"),
+        ("Pablo Rodríguez",          "P. RODRIGUEZ"),
+        # Surname particles must stay glued to the surname.
+        ("Maicol De Souza",          "M. DE SOUZA"),
+        ("Jose L. Da Silva",         "J. L. DA SILVA"),
+        # Idempotence: canonical inputs are unchanged.
+        ("L. SILVA",                 "L. SILVA"),
+        ("C. A. MEDINA",             "C. A. MEDINA"),
+        ("J. D. DE ARRASCAETA",      "J. D. DE ARRASCAETA"),
+        ("F. G. D'ALBORA",           "F. G. D'ALBORA"),
+        # Aprendiz suffix variants.
+        ("Braian Morales  (- 4) ",   "B. MORALES"),
+        ("Braian Morales(-1)",       "B. MORALES"),
+    ],
+)
+def test_canonical_jockey_name(raw: str, expected: str) -> None:
+    assert canonical_jockey_name(raw) == expected
+
+
+@pytest.mark.parametrize("raw", [None, "", "   ", "  \t ", 3.14])
+def test_canonical_jockey_name_returns_none_on_empty(raw) -> None:
+    assert canonical_jockey_name(raw) is None
+
+
+def test_canonical_jockey_name_is_idempotent() -> None:
+    """Running canonical form through the normalizer again must be a no-op."""
+    raw = "Leonardo L. Silva (-3)"
+    once = canonical_jockey_name(raw)
+    twice = canonical_jockey_name(once)
+    assert once == twice == "L. L. SILVA"
+
+
+def test_jockey_lookup_resolves_across_programa_and_history_shapes() -> None:
+    """The whole point of the normalizer: the Programa payload's raw
+    ``"Leonardo L. Silva (-3)"`` must resolve to the same jockey index
+    entry as the historical parquet's ``"L. L. SILVA"``.
+    """
+    base = datetime(2024, 1, 1)
+    # History: 5 rides by "L. L. SILVA" — 3 of them in the trifecta.
+    hist_rows = []
+    for i, (horse, pos) in enumerate([
+        ("A", 1), ("B", 2), ("C", 5), ("D", 3), ("E", 8),
+    ]):
+        hist_rows.append({
+            "horse_name": horse,
+            "race_date": base + timedelta(days=30 * i),
+            "racetrack_id": 1,
+            "finish_pos": pos,
+            "kg": 55.0,
+            "distance_m": 1600,
+            "jockey": "L. L. SILVA",
+        })
+    history = pd.DataFrame(hist_rows)
+    pipe = FeatureEngineeringPipeline().fit(history)
+
+    # Serving payload: same jockey, in Programa raw form.
+    serving = pd.DataFrame([{
+        "horse_name": "NEW HORSE",
+        "race_date": base + timedelta(days=365),
+        "racetrack_id": 1,
+        "distance_m": 1600,
+        "kg": 56.0,
+        "jockey_name": "Leonardo L. Silva (-3)",
+    }])
+    out = pipe.transform(serving)
+    assert out.loc[0, "jockey_career_runs"] == 5, (
+        "Programa's raw jockey name failed to resolve — normalizer broken."
+    )
+    # 3 of 5 rides ended in the trifecta.
+    assert out.loc[0, "jockey_career_show_rate"] == pytest.approx(3 / 5)
