@@ -82,10 +82,24 @@ class PredictBatchResponse(BaseModel):
 # Explainability
 # ---------------------------------------------------------------------------
 class PredictExplainRequest(BaseModel):
-    """Same shape as :class:`PredictOnlineRequest` plus a top_k knob."""
+    """Same shape as :class:`PredictOnlineRequest` plus a top_k knob.
+
+    ``context_entries`` — when provided, the feature pipeline runs over
+    the full field so within-race features (``n_field``,
+    ``weight_kg_zscore_in_race``) match what ``/predict_batch`` produces.
+    Without it the endpoint falls back to a single-entry transform, which
+    is only correct for match-race-style single-horse hypotheticals.
+    """
 
     race: RaceContextIn
     entry: HorseEntryIn
+    context_entries: list[HorseEntryIn] | None = Field(
+        default=None,
+        description=(
+            "Optional full-field context (all horses in the race). Required "
+            "for the explanation's p_trifecta to match /predict_batch."
+        ),
+    )
     top_k: int = Field(default=10, ge=1, le=40,
                        description="Number of top contributions to return")
 

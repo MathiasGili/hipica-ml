@@ -281,6 +281,21 @@ with tab_program:
                     "sex_code": row["sex_code"] if pd.notna(row["sex_code"]) else None,
                     "jockey_name": row["jockey_name"] if pd.notna(row["jockey_name"]) else None,
                 }
+                # Full-field context so n_field / weight_kg_zscore_in_race are
+                # computed over the real race (6 horses), not the single-entry
+                # transform (n_field=1) that inflates the field-size contribution
+                # and desyncs the explanation from the table probability.
+                context_entries_payload = [
+                    {
+                        "horse_name": r["horse_name"],
+                        "kg": float(r["kg"]),
+                        "post_position": int(r["post_position"]) if pd.notna(r["post_position"]) else None,
+                        "horse_age": int(r["horse_age"]) if pd.notna(r["horse_age"]) else None,
+                        "sex_code": r["sex_code"] if pd.notna(r["sex_code"]) else None,
+                        "jockey_name": r["jockey_name"] if pd.notna(r["jockey_name"]) else None,
+                    }
+                    for _, r in df.iterrows()
+                ]
                 race_payload = {
                     "race_date": data["race_date"],
                     "racetrack_id": int(data["racetrack_id"]),
@@ -289,7 +304,12 @@ with tab_program:
                 try:
                     er = requests.post(
                         f"{API_URL}/predict_explain",
-                        json={"race": race_payload, "entry": entry_payload, "top_k": 10},
+                        json={
+                            "race": race_payload,
+                            "entry": entry_payload,
+                            "context_entries": context_entries_payload,
+                            "top_k": 10,
+                        },
                         timeout=15,
                     )
                     er.raise_for_status()

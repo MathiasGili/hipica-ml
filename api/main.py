@@ -168,8 +168,28 @@ def predict_explain(req: PredictExplainRequest) -> PredictExplainResponse:
     XGBoost 2.x classifiers loaded from joblib.
     """
     m = _model()
-    targets = _entries_to_targets(req.race, [req.entry])
-    feats = m.feature_pipeline.transform(targets)[ALL_FEATURES]
+    # When the client sends the full field via ``context_entries``, transform
+    # everyone together so ``n_field`` / ``weight_kg_zscore_in_race`` land at
+    # the same values ``/predict_batch`` uses. Otherwise fall back to a
+    # single-entry transform (n_field=1, z-score NaN → median-imputed), which
+    # skews the explanation vs the batch probability. See the "27% vs 18%"
+    # bug: single-entry transform inflates ``n_field`` contribution by ~+0.85
+    # log-odds in a 6-horse race.
+    if req.context_entries:
+        context = list(req.context_entries)
+        target_name = req.entry.horse_name.upper().strip()
+        if not any(e.horse_name.upper().strip() == target_name for e in context):
+            context.append(req.entry)
+        target_pos = next(
+            i for i, e in enumerate(context)
+            if e.horse_name.upper().strip() == target_name
+        )
+        targets = _entries_to_targets(req.race, context)
+        feats_all = m.feature_pipeline.transform(targets)[ALL_FEATURES].reset_index(drop=True)
+        feats = feats_all.iloc[[target_pos]]
+    else:
+        targets = _entries_to_targets(req.race, [req.entry])
+        feats = m.feature_pipeline.transform(targets)[ALL_FEATURES]
 
     pre = m.estimator.named_steps["pre"]
     clf = m.estimator.named_steps["clf"]
