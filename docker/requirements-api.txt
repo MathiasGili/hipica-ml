@@ -8,7 +8,9 @@
 # ---------- Core data ----------
 pandas>=2.2.0,<3.0
 numpy>=1.26.0,<2.2
-pyarrow>=15.0.0          # reads history.parquet
+# Pin below 20 — pyarrow 25.x segfaults in Streamlit on AL2023; keep API in
+# sync to preserve train-serve parity on Arrow encoding.
+pyarrow>=15.0,<20.0      # reads history.parquet
 xlrd==2.0.1              # legacy .xls (Maroñas "tabuladas")
 
 # ---------- ML (inference) ----------

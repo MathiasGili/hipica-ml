@@ -2,6 +2,12 @@
 # Streamlit UI runtime deps — the UI is a thin client for the FastAPI service.
 # Only needs streamlit, requests and pandas for the results table.
 # ============================================================================
-streamlit>=1.36.0
+streamlit>=1.36.0,<2.0
 requests>=2.32.0
 pandas>=2.2.0,<3.0
+# pyarrow 25.x segfaults inside libarrow.so.2500 when Streamlit renders
+# certain DataFrames on Amazon Linux 2023 (kernel: 'segfault at 18 ip ... in
+# libarrow.so.2500'). Pin to the 19.x line which is stable with Streamlit
+# and matches numpy 1.26.x.
+pyarrow>=15.0,<20.0
+numpy>=1.26.0,<2.2
