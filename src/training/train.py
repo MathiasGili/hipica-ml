@@ -98,13 +98,16 @@ def build_estimator(device: str = "cuda") -> Pipeline:
         eval_metric="logloss",
         tree_method="hist",
         device=device,           # 'cuda' if GPU available, else 'cpu'
-        n_estimators=600,
-        max_depth=6,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=2,
-        reg_lambda=1.0,
+        # v5-tuned hyperparameters (Optuna, 200 trials, PR-AUC obj).
+        n_estimators=850,
+        max_depth=8,
+        learning_rate=0.01229,
+        min_child_weight=4,
+        reg_lambda=4.44,
+        reg_alpha=1.87,
+        subsample=0.83,
+        colsample_bytree=0.85,
+        gamma=2.25,
         random_state=42,
         n_jobs=-1,
     )

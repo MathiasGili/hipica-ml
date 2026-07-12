@@ -75,3 +75,9 @@ Thumbs.db
 models/trifecta_pipeline_tuned/
 models/trifecta_pipeline_v4tuned_predatafix/
 models/trifecta_pipeline_v4_backup/
+models/trifecta_pipeline_v5datafix_maronasonly/
+
+# --- Local parquet backups (only ship history.parquet) -----------------------
+data/processed/*.bak
+data/processed/*.pre_distancefix
+backup/
