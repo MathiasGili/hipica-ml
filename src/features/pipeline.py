@@ -348,6 +348,10 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
                 "weight_change_from_last": np.nan,
                 "jockey_career_runs": jockey_runs,
                 "jockey_career_show_rate": jockey_show_rate,
+                "speed_career_mean": np.nan,
+                "speed_last3_mean": np.nan,
+                "speed_best_last3": np.nan,
+                "speed_at_dist_bucket": np.nan,
             }
 
         last_date = hist["race_date"].max()
@@ -431,6 +435,38 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
         else:
             weight_change_from_last = np.nan
 
+        # Speed features: distance / total_time, clipped to a plausible band.
+        # Real racing speed is ~14-18 m/s; anything outside [8, 22] is a
+        # timing/parse outlier (top decile of raw data reached 178 m/s).
+        if "total_time_s" in hist.columns and "distance_m" in hist.columns:
+            time_s = hist["total_time_s"].astype(float)
+            dist_m = hist["distance_m"].astype(float)
+            speed = dist_m / time_s.where(time_s > 0)
+            speed = speed.where(speed.between(8, 22))
+            speed_career_mean = float(speed.mean()) if speed.notna().any() else np.nan
+            # Take last 3 by date; align speed to hist by index, then sort.
+            last3 = (
+                hist.assign(_spd=speed)
+                .sort_values("race_date")["_spd"]
+                .dropna()
+                .tail(3)
+            )
+            speed_last3_mean = float(last3.mean()) if not last3.empty else np.nan
+            speed_best_last3 = float(last3.max()) if not last3.empty else np.nan
+            if pd.notna(target_dist):
+                dist_mask = dist_m.between(
+                    float(target_dist) - 100, float(target_dist) + 100
+                )
+                bucket_speed = speed[dist_mask]
+                speed_at_dist_bucket = (
+                    float(bucket_speed.mean()) if bucket_speed.notna().any() else np.nan
+                )
+            else:
+                speed_at_dist_bucket = np.nan
+        else:
+            speed_career_mean = speed_last3_mean = speed_best_last3 = np.nan
+            speed_at_dist_bucket = np.nan
+
         # Jockey features (independent of horse history — uses jockey index).
         jockey_runs, jockey_show_rate = self._jockey_features(
             row.get("jockey_name"), race_date
@@ -466,6 +502,10 @@ class FeatureEngineeringPipeline(BaseEstimator, TransformerMixin):
             "weight_change_from_last": weight_change_from_last,
             "jockey_career_runs": jockey_runs,
             "jockey_career_show_rate": jockey_show_rate,
+            "speed_career_mean": speed_career_mean,
+            "speed_last3_mean": speed_last3_mean,
+            "speed_best_last3": speed_best_last3,
+            "speed_at_dist_bucket": speed_at_dist_bucket,
         }
 
     def _jockey_features(

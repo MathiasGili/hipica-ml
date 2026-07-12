@@ -98,6 +98,12 @@ NUMERIC_FEATURES: Final[list[str]] = [
     # v4: jockey signal (computed from history of every horse the jockey rode)
     "jockey_career_runs",
     "jockey_career_show_rate",
+    # v8: raw speed features (distance / total_time). Real racing speed sits in
+    # 8-22 m/s; anything outside that band is dropped as a parse/timing outlier.
+    "speed_career_mean",
+    "speed_last3_mean",
+    "speed_best_last3",
+    "speed_at_dist_bucket",
 ]
 
 CATEGORICAL_FEATURES: Final[list[str]] = [
